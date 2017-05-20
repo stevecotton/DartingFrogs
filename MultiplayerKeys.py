@@ -62,10 +62,7 @@ class Frog(pygame.sprite.Sprite):
         self.rect.move_ip (self.rect.width * column, 0)
         print ("Frog rect: ", self.rect)
 
-    def update(self, screen_scroll=0):
-        """Screen scroll moves all frogs backwards by this many pixels"""
-        self.rect.move_ip (0, screen_scroll)
-
+    def update(self):
         if self.state == "jump":
             if self.stateStep < len(__class__.jumpMovement):
                 newpos = self.rect.move (0, __class__.jumpMovement[self.stateStep])
@@ -162,14 +159,18 @@ def main():
             if front < 0.2 * camera_area.height:
                 screen_scroll += 2
 
+        # Screen scroll is really moving everything downwards
+        for entity in playersprites:
+            entity.rect.move_ip (0, screen_scroll)
+
         # If any frogs are at the back of the screen, move them
         if screen_scroll:
             for player in players:
                 if player.rect.bottom + screen_scroll > 0.95 * camera_area.height:
                     player.jump()
 
-        for player in players:
-            player.update (screen_scroll=screen_scroll)
+        playersprites.update()
+
         playersprites.draw(screen)
         pygame.display.flip()
 
