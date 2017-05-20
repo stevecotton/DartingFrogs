@@ -13,47 +13,28 @@ try:
     import getopt
     import pygame
     from pygame.locals import *
+    from Hazards import Road
+    from Utils import *
 except ImportError as err:
     print ("couldn't load module. %s" % (err))
     sys.exit(2)
-
-def load_png(name, team_color=None):
-    """ Load image and return image object"""
-    fullname = os.path.join('data', name)
-    try:
-        image = pygame.image.load(fullname)
-        if image.get_alpha() is None:
-            image = image.convert()
-        else:
-            image = image.convert_alpha()
-        if team_color:
-            pxarray = pygame.PixelArray (image)
-            for x in range (40, 240, 40):
-                magenta = pygame.Color (x, 0, x, 255)
-                replacement = pygame.Color (int (x * team_color.r / 255), int (x * team_color.g / 255), int (x * team_color.b / 255), 255)
-                pxarray.replace (magenta, replacement);
-            del pxarray
-    except pygame.error as message:
-        print ('Cannot load image:', fullname)
-        raise SystemExit (message)
-    return image, image.get_rect()
 
 class Frog(pygame.sprite.Sprite):
     """Each frog will have a key to make it jump, and a team-color"""
 
     jumpMovement = [-5, -5, -5, -5, -5, -4, -4, -4, -4, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -1]
+    sprites_files = ['frog_resting.png', 'frog_jump.png']
     
     def __init__(self, key, team_color=None, column=0):
         """The key is the keyboard key used to make the frog jump"""
+        pygame.sprite.Sprite.__init__(self)
         print ("Creating a new frog for key ", key, " in column ", column)
         self.key = key
-        pygame.sprite.Sprite.__init__(self)
-        self.sprites = ['frog_resting.png', 'frog_jump.png']
         if (column % 2):
             team_color=pygame.Color (0x80, 0x20 * ((7 - column) % 8), 0, 255)
         else:
             team_color=pygame.Color (0, 0x20 * ((7 - column) % 8), 0x80, 255)
-        self.image, self.rect = load_png(self.sprites[0], team_color)
+        self.image, self.rect = load_png(__class__.sprites_files[0], team_color)
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         self.state = "still"
@@ -105,7 +86,8 @@ def main():
     players.append (Frog(key=K_a, column=1))
 
     # Initialise sprites
-    playersprites = pygame.sprite.RenderPlain(players)
+    playersprites = pygame.sprite.Group(players)
+    hazardsprites = pygame.sprite.Group()
 
     # Blit everything to the screen
     screen.blit(background, (0, 0))
@@ -141,26 +123,24 @@ def main():
                     if event.key == player.getJumpKey():
                         player.rest()
 
-        for player in players:
-            screen.blit(background, player.rect, player.rect)
-
         # Find out where the frogs are, calculate whether the screen should scroll
         screen_scroll = 0
-        if len (players) > 0:
-            make_slow_frogs_jump = False
-            front, back = camera_area.height, 0
-            for player in players:
-                front = min (front, player.rect.y)
-                back = max (back, player.rect.bottom)
-            if back < 0.8 * camera_area.height:
+        bounds = get_bounding_box (playersprites)
+        if bounds != None:
+            # Scroll if no-one's near the bottom
+            if bounds.bottom < 0.8 * camera_area.height:
                 screen_scroll += 1
-            if front < 0.5 * camera_area.height:
+            # Scroll if anyone is ahead
+            if bounds.top < 0.5 * camera_area.height:
                 screen_scroll += 1
-            if front < 0.2 * camera_area.height:
+            # Scroll faster if someone is far ahead
+            if bounds.top < 0.2 * camera_area.height:
                 screen_scroll += 2
 
         # Screen scroll is really moving everything downwards
         for entity in playersprites:
+            entity.rect.move_ip (0, screen_scroll)
+        for entity in hazardsprites:
             entity.rect.move_ip (0, screen_scroll)
 
         # If any frogs are at the back of the screen, move them
@@ -169,8 +149,24 @@ def main():
                 if player.rect.bottom + screen_scroll > 0.95 * camera_area.height:
                     player.jump()
 
+        # Scrolling the screen may introduce a new hazard
+        bounds = get_bounding_box (hazardsprites)
+        if bounds == None or bounds.top > 100:
+            road = Road (hazardsprites, Rect(0, -100, camera_area.width, 64), speed=5)
+            hazardsprites.add (road)
+
+        hazardsprites.update()
         playersprites.update()
 
+        offscreenHazards = []
+        for entity in hazardsprites:
+            if entity.rect.top > camera_area.height:
+                offscreenHazards.append (entity)
+        for entity in offscreenHazards:
+            entity.kill()
+
+        screen.blit(background, (0, 0))
+        hazardsprites.draw(screen)
         playersprites.draw(screen)
         pygame.display.flip()
 
