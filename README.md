@@ -39,3 +39,22 @@ The code is GPLv2+, partly based on Tom Chance's PyGame tutorial.
 Placeholder frog image, copyright Octalot. It's expected to be replaced with a
 frog drawn by Octalot, possibly using (GFDL / CC-BY-SA) photos of poison dart
 frogs for reference.
+
+* data/frog\_resting.png
+* data/frog\_resting.xcf
+
+The garbage truck image is copyright Satik64 (), and licensed under CC0. It was
+downloaded from
+https://opengameart.org/content/garbage-truck
+
+* data/trashmaster.png
+
+Several car and truck images are copyright Lowder2 (Antony Christian Sumakud),
+and licensed under CC-BY 3.0. They were downloaded from
+https://opengameart.org/content/vary-car-pack-1
+
+* data/cars/BuickerB.png
+* data/cars/GalardB.png
+* data/cars/JeepB.png
+* data/cars/RamB.png
+* data/cars/SuperB.png
