@@ -47,7 +47,10 @@ class Frog(pygame.sprite.Sprite):
         self.key = key
         pygame.sprite.Sprite.__init__(self)
         self.sprites = ['frog_resting.png', 'frog_jump.png']
-        team_color=pygame.Color (0x80 * (column %2), 0x40 * (column % 4), 0x20 * (column % 8), 255)
+        if (column % 2):
+            team_color=pygame.Color (0x80, 0x20 * ((7 - column) % 8), 0, 255)
+        else:
+            team_color=pygame.Color (0, 0x20 * ((7 - column) % 8), 0x80, 255)
         self.image, self.rect = load_png(self.sprites[0], team_color)
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
