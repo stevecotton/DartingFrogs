@@ -40,6 +40,8 @@ def load_png(name, team_color=None):
 
 class Frog(pygame.sprite.Sprite):
     """Each frog will have a key to make it jump, and a team-color"""
+
+    jumpMovement = [-5, -5, -5, -5, -5, -4, -4, -4, -4, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -1]
     
     def __init__(self, key, team_color=None, column=0):
         """The key is the keyboard key used to make the frog jump"""
@@ -55,33 +57,43 @@ class Frog(pygame.sprite.Sprite):
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         self.state = "still"
-        self.movepos = 0;
+        self.stateStep = 0;
+        self.stateNext = "still";
         self.rect.move_ip (self.rect.width * column, 0)
         print ("Frog rect: ", self.rect)
 
-    def update(self):
-        newpos = self.rect.move (0, self.movepos)
-        if self.area.contains (newpos):
-            self.rect = newpos
-        else:
-            self.movepos = - self.movepos
-        pygame.event.pump()
+    def update(self, screen_scroll=0):
+        """Screen scroll moves all frogs backwards by this many pixels"""
+        self.rect.move_ip (0, screen_scroll)
+
+        if self.state == "jump":
+            if self.stateStep < len(__class__.jumpMovement):
+                newpos = self.rect.move (0, __class__.jumpMovement[self.stateStep])
+                if self.area.contains (newpos):
+                    self.rect = newpos
+                self.stateStep = self.stateStep + 1
+            else:
+                self.state = self.stateNext
+                self.stateStep = 0
+
 
     def getJumpKey(self):
         return self.key
     
     def jump(self):
         """Change to a different sprite, and move up the screen"""
-        self.movepos = -1
+        # Hammering the jump key will move faster than just keeping it pressed.
+        # todo: add joystick support to prevent hardware damage
         self.state = "jump"
+        self.stateStep = 0
 
     def rest(self):
-        self.movepos = 0
-        self.state = "still"
+        self.stateNext = "still"
 
 def main():
     # Initialise screen
     pygame.init()
+    camera_area = pygame.Rect (0, 0, 640, 480)
     screen = pygame.display.set_mode((640, 480))
     pygame.display.set_caption('Multiplayer frog selection')
 
@@ -134,7 +146,30 @@ def main():
 
         for player in players:
             screen.blit(background, player.rect, player.rect)
-        playersprites.update()
+
+        # Find out where the frogs are, calculate whether the screen should scroll
+        screen_scroll = 0
+        if len (players) > 0:
+            make_slow_frogs_jump = False
+            front, back = camera_area.height, 0
+            for player in players:
+                front = min (front, player.rect.y)
+                back = max (back, player.rect.bottom)
+            if back < 0.8 * camera_area.height:
+                screen_scroll += 1
+            if front < 0.5 * camera_area.height:
+                screen_scroll += 1
+            if front < 0.2 * camera_area.height:
+                screen_scroll += 2
+
+        # If any frogs are at the back of the screen, move them
+        if screen_scroll:
+            for player in players:
+                if player.rect.bottom + screen_scroll > 0.95 * camera_area.height:
+                    player.jump()
+
+        for player in players:
+            player.update (screen_scroll=screen_scroll)
         playersprites.draw(screen)
         pygame.display.flip()
 
