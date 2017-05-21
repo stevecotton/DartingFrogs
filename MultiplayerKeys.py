@@ -68,8 +68,11 @@ class Frog(pygame.sprite.Sprite):
             self.state = self.stateNext
             self.stateStep = 0
 
-    def getJumpKey(self):
+    def get_jump_key(self):
         return self.key
+
+    def get_name(self):
+        return pygame.key.name (self.key)
 
     def jump(self):
         """Change to a different sprite, and move up the screen"""
@@ -103,6 +106,12 @@ class NewPlayersJoinMessage(MessageSprite):
         message = "Press any key to get a frog (except escape, which quits)"
         MessageSprite.__init__(self, message)
 
+class VictoryMessage(MessageSprite):
+    """Shown as the game_over_sprite if someone won a multiplayer game"""
+    def __init__(self, victor):
+        message = "Winner: %s" % victor.get_name()
+        MessageSprite.__init__(self, message)
+
 def main():
     # Initialise screen
     pygame.init()
@@ -111,8 +120,14 @@ def main():
         print ("Could not initialize fonts")
     camera_area = pygame.Rect (0, 0, 1024, 700)
     screen = pygame.display.set_mode((camera_area.width, camera_area.height))
-    pygame.display.set_caption('Multiplayer frog selection')
+    pygame.display.set_caption('Multiplayer frog race')
+    play_again = True
+    while play_again:
+        play_again = multiplayer_race (screen, camera_area)
 
+def multiplayer_race (screen, camera_area) -> bool:
+    """One complete loop of the game, until game over.
+    Returns true if there should be another game"""
     # Fill background
     background = pygame.Surface(screen.get_size())
     background = background.convert()
@@ -156,13 +171,13 @@ def main():
 
         for event in pygame.event.get():
             if event.type == QUIT:
-                return
+                return False
             elif event.type == KEYDOWN:
                 if event.key == K_ESCAPE:
-                    return
+                    return False
                 already_controls_a_frog = False
                 for player in players:
-                    if event.key == player.getJumpKey():
+                    if event.key == player.get_jump_key():
                         already_controls_a_frog = True
                         player.jump()
                 if not already_controls_a_frog:
@@ -177,7 +192,7 @@ def main():
 
             elif event.type == KEYUP:
                 for player in players:
-                    if event.key == player.getJumpKey():
+                    if event.key == player.get_jump_key():
                         player.rest()
 
         # Find out where the frogs are, calculate whether the screen should scroll
@@ -193,6 +208,8 @@ def main():
             # Scroll faster if someone is far ahead
             if bounds.top < 0.2 * camera_area.height:
                 screen_scroll += 2
+        if game_over_sprite != None:
+            screen_scroll = 3
 
         # Screen scroll is really moving everything downwards
         for entity in playersprites:
@@ -232,6 +249,8 @@ def main():
         for entity in offscreenRemoval:
             print ("Removing hazard or scenery at ", entity.rect)
             entity.kill()
+        if game_over_sprite and not game_over_sprite.alive():
+            return True
 
         # Now check for collisions
         for player in playersprites:
@@ -241,9 +260,15 @@ def main():
                 new_players_can_join.kill()
         if (not playersprites) and (not new_players_can_join.alive()):
             if not game_over_sprite:
-                game_over_sprite = MessageSprite ("GAME OVER")
+                game_over_sprite = MessageSprite ("GAME OVER (distance %d)" % distance_covered)
                 hazardsprites.add (game_over_sprite)
-        # todo: in a multiplayer game, show a victory screen if len(playersprites) == 1
+        # Check for victory in multiplayer, if there is one frog still alive
+        if len (playersprites) == 1 and len (players) > 1:
+            if not game_over_sprite:
+                for player in players:
+                    if player.alive():
+                        game_over_sprite = VictoryMessage (player)
+                        hazardsprites.add (game_over_sprite)
 
         screen.blit(background, (0, 0))
         scenerysprites.draw(screen)
