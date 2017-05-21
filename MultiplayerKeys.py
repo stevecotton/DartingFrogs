@@ -80,9 +80,30 @@ class Frog(pygame.sprite.Sprite):
     def rest(self):
         self.stateNext = "still"
 
+class MessageSprite(pygame.sprite.Sprite):
+    """A single line of text"""
+    def __init__(self, message):
+        pygame.sprite.Sprite.__init__(self)
+        font = pygame.font.SysFont(None, 40)
+        self.image = font.render (message, True, (255, 255, 255))
+        self.rect = self.image.get_rect()
+        screen = pygame.display.get_surface()
+        self.rect.centerx = screen.get_size()[0] / 2
+
+class NewPlayersJoinMessage(MessageSprite):
+    """The text that any key joins the game is a sprite, when it scrolls off
+    screen is the time that players can't join any more
+    """
+    def __init__(self):
+        message = "Press any key to get a frog (except escape, which quits)"
+        MessageSprite.__init__(self, message)
+
 def main():
     # Initialise screen
     pygame.init()
+    pygame.font.init()
+    if not pygame.font.get_init():
+        print ("Could not initialize fonts")
     camera_area = pygame.Rect (0, 0, 1024, 700)
     screen = pygame.display.set_mode((camera_area.width, camera_area.height))
     pygame.display.set_caption('Multiplayer frog selection')
@@ -94,21 +115,34 @@ def main():
 
     # Initialise players
     players = []
+    new_players_can_join = NewPlayersJoinMessage()
+    game_over_sprite = None
+    distance_covered = 0
+    distance_until_next_hazard = 100
 
     # Initialise sprite groups
     playersprites = pygame.sprite.Group(players)
     # Scenery isn't dangerous (but includes roads, which spawn hazards)
     scenerysprites = pygame.sprite.Group()
+    scenerysprites.add (new_players_can_join)
     # Hazard sprites are the ones that will kill colliding frogs
     hazardsprites = pygame.sprite.Group()
-
-    # Blit everything to the screen
-    screen.blit(background, (0, 0))
-    pygame.display.flip()
 
     # Initialise clock and RNG
     clock = pygame.time.Clock()
     random_number_generator = random.Random()
+
+    # For the first screen, generate some roads
+    grass = random_number_generator.randint (1, 4)
+    for x in range (1, 4):
+        if x != grass:
+            road = Road (hazardsprites, Rect(0, x * 64, camera_area.width, 64))
+            scenerysprites.add (road)
+            road.update()
+
+    # Blit everything to the screen
+    screen.blit(background, (0, 0))
+    pygame.display.flip()
 
     # Event loop
     while 1:
@@ -127,10 +161,14 @@ def main():
                         already_controls_a_frog = True
                         player.jump()
                 if not already_controls_a_frog:
-                    frog = Frog (key=event.key, column=len(players))
-                    players.append (frog)
-                    playersprites.add (frog)
-                    frog.jump()
+                    if new_players_can_join.alive():
+                        frog = Frog (key=event.key, column=len(players))
+                        players.append (frog)
+                        playersprites.add (frog)
+                        frog.jump()
+                    else:
+                        # todo: show that the new-player phase has ended
+                        pass
 
             elif event.type == KEYUP:
                 for player in players:
@@ -161,15 +199,19 @@ def main():
 
         # If any frogs are at the back of the screen, move them
         if screen_scroll:
+            distance_covered += screen_scroll
+            distance_until_next_hazard -= screen_scroll
             for player in players:
                 if player.rect.bottom + screen_scroll >= camera_area.height:
                     player.jump_forced()
 
         # Scrolling the screen may introduce a new hazard or hazard-spawning scenery
-        bounds = get_bounding_box (hazardsprites, scenerysprites)
-        if bounds == None or bounds.top > 100:
-            road = Road (hazardsprites, Rect(0, -100, camera_area.width, 64))
-            scenerysprites.add (road)
+        if distance_until_next_hazard <= 0:
+            distance_until_next_hazard += 64
+            hazard = random_number_generator.choice (("grass", "road", "road"))
+            if hazard == "road":
+                road = Road (hazardsprites, Rect(0, -distance_until_next_hazard, camera_area.width, 64))
+                scenerysprites.add (road)
 
         hazardsprites.update()
         scenerysprites.update()
@@ -190,7 +232,13 @@ def main():
         for player in playersprites:
             hit = pygame.sprite.spritecollide (player, hazardsprites, False, collided=pygame.sprite.collide_mask)
             if (hit):
-                print ("Frog hit hazard")
+                player.kill()
+                new_players_can_join.kill()
+        if (not playersprites) and (not new_players_can_join.alive()):
+            if not game_over_sprite:
+                game_over_sprite = MessageSprite ("GAME OVER")
+                hazardsprites.add (game_over_sprite)
+        # todo: in a multiplayer game, show a victory screen if len(playersprites) == 1
 
         screen.blit(background, (0, 0))
         scenerysprites.draw(screen)
