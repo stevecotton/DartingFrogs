@@ -22,6 +22,23 @@ class CenterPoint:
         self.x = x
         self.y = y
 
+class ImageCache:
+    cache = {}
+
+    def __init__(self):
+        pass
+
+    def load_rotated_image (self, filename, rotation):
+        key = (filename, rotation)
+        if key in __class__.cache:
+            print ("Cache hit for ", key)
+            return __class__.cache[key]
+        image, ignored_rect = load_png(filename)
+        if rotation != 0:
+            image = pygame.transform.rotate (image, rotation)
+        __class__.cache[key] = image
+        return image
+
 class Car(pygame.sprite.Sprite):
     """Cars (including trucks) that travel on a road"""
 
@@ -36,6 +53,8 @@ class Car(pygame.sprite.Sprite):
         "trashmaster.png",
     ]
 
+    image_cache = ImageCache()
+
     def __init__(self, start_point, kill_point, speed=1):
         """The car spawns with its center at start_point, which should be off-screen.
         
@@ -45,17 +64,17 @@ class Car(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.speed = speed
 
-        # todo: pick a random sprite
-        spritefile = __class__.car_sprites[0]
+        spritefile = None
         if abs (speed) > 3:
-            spritefile = __class__.fast_car_sprites[0]
+            spritefile = random.Random().choice (__class__.fast_car_sprites)
+        else:
+            spritefile = random.Random().choice (__class__.car_sprites)
 
         # The car images are loaded pointing north
-        north_image, north_rect = load_png(spritefile)
         if speed > 0:
-            self.image = pygame.transform.rotate (north_image, -90)
+            self.image = __class__.image_cache.load_rotated_image (spritefile, -90)
         else:
-            self.image = pygame.transform.rotate (north_image, 90)
+            self.image = __class__.image_cache.load_rotated_image (spritefile, 90)
         self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.center = start_point.x, start_point.y
