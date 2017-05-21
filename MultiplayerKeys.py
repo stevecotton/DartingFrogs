@@ -13,6 +13,7 @@ try:
     import getopt
     import pygame
     from pygame.locals import *
+    from GameConstants import GameConstants
     from Hazards import Road
     from Utils import *
 except ImportError as err:
@@ -22,12 +23,9 @@ except ImportError as err:
 class Frog(pygame.sprite.Sprite):
     """Each frog will have a key to make it jump, and a team-color"""
 
-    # todo: make the frog end their move aligned to a road, instead of having a collision box
-    # that's on two lanes of the road
-    jump_movement = [-5, -5, -5, -5, -4, -4, -4, -2, -2, -2, -2, -2, -1, -1, -1]
     sprites_files = ['frog_resting.png', 'frog_jump.png']
     
-    def __init__(self, key, team_color=None, column=0):
+    def __init__(self, key, team_color=None, column=0, distance_align=0):
         """The key is the keyboard key used to make the frog jump"""
         pygame.sprite.Sprite.__init__(self)
         print ("Creating a new frog for key ", key, " in column ", column)
@@ -43,20 +41,20 @@ class Frog(pygame.sprite.Sprite):
         self.state = "still"
         self.stateStep = 0;
         self.stateNext = "still";
-        self.rect.bottom = screen.get_rect().bottom - 100;
+        # The game aligns everything to (top of screen + a multiple of jump_length), frogs start a
+        # jump from the bottom of the screen.
+        self.rect.top = distance_align + ((screen.get_rect().height / GameConstants.jump_length) - 1) * GameConstants.jump_length
         self.rect.centerx = screen.get_rect().width / 4 + self.rect.width * column
-        print ("Frog rect: ", self.rect)
+        print ("Frog rect: ", self.rect, " total movement: ", sum (GameConstants.frog_jump_movement))
 
     def update(self):
-        if self.state == "jump":
-            if self.stateStep < len(__class__.jump_movement):
-                newpos = self.rect.move (0, __class__.jump_movement[self.stateStep])
-                if self.area.contains (newpos):
-                    self.rect = newpos
-                self.stateStep = self.stateStep + 1
-            else:
-                self.state = self.stateNext
-                self.stateStep = 0
+        if self.state == "jump" and self.stateStep < len(GameConstants.frog_jump_movement):
+            # The scrolling code should keep frogs on screen
+            self.rect.move_ip (0, GameConstants.frog_jump_movement[self.stateStep])
+            self.stateStep = self.stateStep + 1
+        else:
+            self.state = self.stateNext
+            self.stateStep = 0
 
 
     def getJumpKey(self):
@@ -66,8 +64,6 @@ class Frog(pygame.sprite.Sprite):
         """Change to a different sprite, and move up the screen"""
         # Hammering the jump key will move faster than just keeping it pressed.
         # todo: add joystick support to prevent hardware damage
-        self.state = "jump"
-        self.stateStep = 0
         self.stateNext = "jump"
 
     def jump_forced(self):
@@ -118,7 +114,7 @@ def main():
     new_players_can_join = NewPlayersJoinMessage()
     game_over_sprite = None
     distance_covered = 0
-    distance_until_next_hazard = 100
+    distance_until_next_hazard = GameConstants.road_width
 
     # Initialise sprite groups
     playersprites = pygame.sprite.Group(players)
@@ -136,7 +132,7 @@ def main():
     grass = random_number_generator.randint (1, 4)
     for x in range (1, 4):
         if x != grass:
-            road = Road (hazardsprites, Rect(0, x * 64, camera_area.width, 64))
+            road = Road (hazardsprites, Rect(0, x * GameConstants.road_width, camera_area.width, GameConstants.road_width))
             scenerysprites.add (road)
             road.update()
 
@@ -162,7 +158,7 @@ def main():
                         player.jump()
                 if not already_controls_a_frog:
                     if new_players_can_join.alive():
-                        frog = Frog (key=event.key, column=len(players))
+                        frog = Frog (key=event.key, column=len(players), distance_align=-distance_until_next_hazard)
                         players.append (frog)
                         playersprites.add (frog)
                         frog.jump()
@@ -207,10 +203,10 @@ def main():
 
         # Scrolling the screen may introduce a new hazard or hazard-spawning scenery
         if distance_until_next_hazard <= 0:
-            distance_until_next_hazard += 64
+            distance_until_next_hazard += GameConstants.road_width
             hazard = random_number_generator.choice (("grass", "road", "road"))
             if hazard == "road":
-                road = Road (hazardsprites, Rect(0, -distance_until_next_hazard, camera_area.width, 64))
+                road = Road (hazardsprites, Rect(0, -distance_until_next_hazard, camera_area.width, GameConstants.road_width))
                 scenerysprites.add (road)
 
         hazardsprites.update()
