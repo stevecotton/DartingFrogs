@@ -168,10 +168,8 @@ def main():
         # Scrolling the screen may introduce a new hazard or hazard-spawning scenery
         bounds = get_bounding_box (hazardsprites, scenerysprites)
         if bounds == None or bounds.top > 100:
-            speed = random_number_generator.randint (-5, 5)
-            if speed != 0:
-                road = Road (hazardsprites, Rect(0, -100, camera_area.width, 64), speed)
-                scenerysprites.add (road)
+            road = Road (hazardsprites, Rect(0, -100, camera_area.width, 64))
+            scenerysprites.add (road)
 
         hazardsprites.update()
         scenerysprites.update()

@@ -60,6 +60,7 @@ class Car(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = start_point.x, start_point.y
         self.kill_point = kill_point
+        print ("Spawning car at ", self.rect, " with speed ", speed)
 
     def update(self):
         self.rect.move_ip (self.speed, 0)
@@ -76,34 +77,46 @@ class Road(pygame.sprite.Sprite):
     """A road is both a background, and a monsterspawn for cars. Spawned cars
     will be added to the car_sprite_group"""
 
-    def __init__(self, car_sprite_group, rect, speed=1):
-        """The cars all travel at the same speed"""
+    random_speeds = [1, 2, 3, 3, 3, 4, 4, 4, 5, 5, 8, -1, -2, -3, -3, -3, -4, -4, -4, -5, -5, -8]
+
+    def __init__(self, car_sprite_group, rect, speed=0):
+        """The cars on a road all travel at the same speed
+
+        speed=0 means to randomly generate a speed"""
         pygame.sprite.Sprite.__init__(self)
         self.car_sprite_group = car_sprite_group
-        self.speed = speed
         self.random = random.Random()
         self.rect = rect
         self.image = pygame.Surface ((rect.width, rect.height))
         self.image.fill (pygame.Color (40, 40, 40, 255))
-        # For the initial spawn, it should have a high probability of happening immediately
-        self.ticks_since_last_spawn = 1000
-        print ("New road with speed ", speed)
+        if speed:
+            self.speed = speed
+        else:
+            self.speed = self.random.choice (__class__.random_speeds)
+        # Cars are created in the middle of the road at x=spawnx, and disappear at killx
+        if self.speed < 0:
+            self.spawnx = self.rect.width + 100
+            self.killx = -100
+        else:
+            self.spawnx = -100
+            self.killx = self.rect.width + 100
+        # Put some cars on the road during the first update() call
+        self.ticks_until_next_spawn = -1
+        print ("New road with speed ", self.speed, " and spawnx ", self.spawnx)
 
     def update(self):
-        self.ticks_since_last_spawn += 1
-        if self.ticks_since_last_spawn * abs (self.speed) > random.randrange (300, 10000):
-            self.spawn_car()
-
-    def spawn_car(self):
-        left_spawnx = -100
-        right_spawnx = self.rect.width + 100
-        start_point = None
-        car = None
-        if self.speed > 0:
-            start_point = CenterPoint(left_spawnx, self.rect.centery)
-            car = Car (start_point, right_spawnx, self.speed)
+        # Negative ticks_until_next_spawn mean this is the first update() for
+        # this road, and it will still be off-screen.
+        if self.ticks_until_next_spawn < 0:
+            spawnx = self.random.randrange (self.rect.width)
+            self.spawn_car(spawnx)
+        elif self.ticks_until_next_spawn == 0:
+            self.spawn_car (self.spawnx)
         else:
-            start_point = CenterPoint(right_spawnx, self.rect.centery)
-            car = Car (start_point, left_spawnx, self.speed)
+            self.ticks_until_next_spawn -= 1
+
+    def spawn_car(self, spawnx):
+        start_point = CenterPoint (self.spawnx, self.rect.centery)
+        car = Car (start_point, self.killx, self.speed)
         self.car_sprite_group.add (car)
-        self.ticks_since_last_spawn = 0
+        self.ticks_until_next_spawn = random.randrange (300, 1000) / abs (self.speed)
