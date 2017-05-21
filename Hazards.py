@@ -45,8 +45,22 @@ class Car(pygame.sprite.Sprite):
     fast_car_sprites = [
         "cars/GalardB.png",
         "cars/SuperB.png",
+        "cars/GalardB.png",
+        "cars/SuperB.png",
+        "cars/GalardB.png",
+        "cars/SuperB.png",
+        "cars/BuickerB.png",
+        "cars/JeepB.png",
+        "cars/RamB.png",
     ]
     car_sprites = [
+        "cars/GalardB.png",
+        "cars/SuperB.png",
+        "cars/BuickerB.png",
+        "cars/JeepB.png",
+        "cars/RamB.png",
+    ]
+    slow_car_sprites = [
         "cars/BuickerB.png",
         "cars/JeepB.png",
         "cars/RamB.png",
@@ -65,10 +79,12 @@ class Car(pygame.sprite.Sprite):
         self.speed = speed
 
         spritefile = None
-        if abs (speed) > 3:
+        if abs (speed) > 4:
             spritefile = random.Random().choice (__class__.fast_car_sprites)
-        else:
+        elif abs (speed) > 2:
             spritefile = random.Random().choice (__class__.car_sprites)
+        else:
+            spritefile = random.Random().choice (__class__.slow_car_sprites)
 
         # The car images are loaded pointing north
         if speed > 0:
