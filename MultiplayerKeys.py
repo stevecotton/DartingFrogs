@@ -43,10 +43,10 @@ class Frog(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         print ("Creating a new frog for key ", key, " in column ", column)
         self.key = key
-        if (column % 2):
-            team_color=pygame.Color (0x80, 0x20 * ((7 - column) % 8), 0, 255)
+        if (key % 2):
+            team_color=pygame.Color (0x80, 0x20 * ((7 - key) % 8), 0, 255)
         else:
-            team_color=pygame.Color (0, 0x20 * ((7 - column) % 8), 0x80, 255)
+            team_color=pygame.Color (0, 0x20 * ((7 - key) % 8), 0x80, 255)
         self.image, self.rect = load_png(__class__.sprites_files[0], team_color)
         self.mask = pygame.mask.from_surface(self.image)
         screen = pygame.display.get_surface()
@@ -57,6 +57,9 @@ class Frog(pygame.sprite.Sprite):
         # at an aligned point that's about a jump from the bottom of the screen.
         self.rect.top = distance_align + ((screen.get_rect().height / GameConstants.jump_length) - 1) * GameConstants.jump_length
         self.rect.centerx = screen.get_rect().width / 4 + self.rect.width * column
+        # If there's an absurd number of players, start laying out frogs from the left
+        if self.rect.right > screen.get_rect().width:
+            self.rect.left = self.rect.right % screen.get_rect().width
         print ("Frog rect: ", self.rect, " total movement: ", sum (GameConstants.frog_jump_movement))
 
     def update(self):
