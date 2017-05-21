@@ -1,14 +1,16 @@
 Darting Frogs
 =============
 
-A multiplayer frog race, across roads.
+A multiplayer frog race, across roads.  Many players can play, every frog has
+just one control key, which makes it jump forward, there is no way to jump
+backwards.
 
 Why "darting"?
 --------------
 
 When I was reading about frogs, Wikipedia had articles about poison dart frogs,
-which naturally have bright colors to warn off predators.  The word "darting"
-can also mean hurrying from place to place.
+which have bright colors to warn off predators.  The word "darting" can also
+mean hurrying from place to place.
 
 Inspirations
 ------------
@@ -21,8 +23,8 @@ to port the engine.
 The idea of "press any key, get a frog" for combining the key selection and
 number of players amused me, so I decided to implement it.
 
-Development
-===========
+Development notes
+=================
 
 Frog images
 -----------
@@ -43,7 +45,7 @@ frogs for reference.
 * data/frog\_resting.png
 * data/frog\_resting.xcf
 
-The garbage truck image is copyright Satik64 (), and licensed under CC0. It was
+The garbage truck image is copyright Satik64, and licensed under CC0. It was
 downloaded from
 https://opengameart.org/content/garbage-truck
 

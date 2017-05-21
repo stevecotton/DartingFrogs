@@ -1,16 +1,29 @@
 #!/usr/bin/python3
 #
-# GPL, taking code from Tom Chance's PyGame tutorial
+# Copyright (C) 2017 Steve Cotton (Octalot)
+# Based on code from Tom Chance's PyGame tutorial
+# Copyright (C) 2003-2016 Tom Chance
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""This is intended to allow as many players as required. Pressing any normal
-key adds a frog that will jump when that key is pressed again.
+"""This is intended to allow as many players as required.  While the frogs are still on the first screen,
+pressing any normal key adds a frog that will jump when that key is pressed
+again.
 """
 try:
     import sys
     import random
-    import math
-    import os
-    import getopt
     import pygame
     from pygame.locals import *
     from GameConstants import GameConstants
@@ -24,7 +37,7 @@ class Frog(pygame.sprite.Sprite):
     """Each frog will have a key to make it jump, and a team-color"""
 
     sprites_files = ['frog_resting.png', 'frog_jump.png']
-    
+
     def __init__(self, key, team_color=None, column=0, distance_align=0):
         """The key is the keyboard key used to make the frog jump"""
         pygame.sprite.Sprite.__init__(self)
@@ -37,12 +50,11 @@ class Frog(pygame.sprite.Sprite):
         self.image, self.rect = load_png(__class__.sprites_files[0], team_color)
         self.mask = pygame.mask.from_surface(self.image)
         screen = pygame.display.get_surface()
-        self.area = screen.get_rect()
         self.state = "still"
         self.stateStep = 0;
         self.stateNext = "still";
-        # The game aligns everything to (top of screen + a multiple of jump_length), frogs start a
-        # jump from the bottom of the screen.
+        # The game aligns everything to (top of screen + a multiple of jump_length), frogs start
+        # at an aligned point that's about a jump from the bottom of the screen.
         self.rect.top = distance_align + ((screen.get_rect().height / GameConstants.jump_length) - 1) * GameConstants.jump_length
         self.rect.centerx = screen.get_rect().width / 4 + self.rect.width * column
         print ("Frog rect: ", self.rect, " total movement: ", sum (GameConstants.frog_jump_movement))
@@ -56,14 +68,11 @@ class Frog(pygame.sprite.Sprite):
             self.state = self.stateNext
             self.stateStep = 0
 
-
     def getJumpKey(self):
         return self.key
-    
+
     def jump(self):
         """Change to a different sprite, and move up the screen"""
-        # Hammering the jump key will move faster than just keeping it pressed.
-        # todo: add joystick support to prevent hardware damage
         self.stateNext = "jump"
 
     def jump_forced(self):
