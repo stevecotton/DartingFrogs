@@ -22,7 +22,9 @@ except ImportError as err:
 class Frog(pygame.sprite.Sprite):
     """Each frog will have a key to make it jump, and a team-color"""
 
-    jumpMovement = [-5, -5, -5, -5, -5, -4, -4, -4, -4, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -1, -1, -1]
+    # todo: make the frog end their move aligned to a road, instead of having a collision box
+    # that's on two lanes of the road
+    jump_movement = [-5, -5, -5, -5, -4, -4, -4, -2, -2, -2, -2, -2, -1, -1, -1]
     sprites_files = ['frog_resting.png', 'frog_jump.png']
     
     def __init__(self, key, team_color=None, column=0):
@@ -35,18 +37,20 @@ class Frog(pygame.sprite.Sprite):
         else:
             team_color=pygame.Color (0, 0x20 * ((7 - column) % 8), 0x80, 255)
         self.image, self.rect = load_png(__class__.sprites_files[0], team_color)
+        self.mask = pygame.mask.from_surface(self.image)
         screen = pygame.display.get_surface()
         self.area = screen.get_rect()
         self.state = "still"
         self.stateStep = 0;
         self.stateNext = "still";
-        self.rect.move_ip (self.rect.width * column, 0)
+        self.rect.bottom = screen.get_rect().bottom - 100;
+        self.rect.centerx = screen.get_rect().width / 4 + self.rect.width * column
         print ("Frog rect: ", self.rect)
 
     def update(self):
         if self.state == "jump":
-            if self.stateStep < len(__class__.jumpMovement):
-                newpos = self.rect.move (0, __class__.jumpMovement[self.stateStep])
+            if self.stateStep < len(__class__.jump_movement):
+                newpos = self.rect.move (0, __class__.jump_movement[self.stateStep])
                 if self.area.contains (newpos):
                     self.rect = newpos
                 self.stateStep = self.stateStep + 1
@@ -64,6 +68,14 @@ class Frog(pygame.sprite.Sprite):
         # todo: add joystick support to prevent hardware damage
         self.state = "jump"
         self.stateStep = 0
+        self.stateNext = "jump"
+
+    def jump_forced(self):
+        """Frogs at the back of the screen are forced to jump so that they don't scroll off the
+        bottom."""
+        self.state = "jump"
+        self.stateStep = 0
+        # Does not change self.stateNext, "still" frogs will stop after one jump
 
     def rest(self):
         self.stateNext = "still"
@@ -71,8 +83,8 @@ class Frog(pygame.sprite.Sprite):
 def main():
     # Initialise screen
     pygame.init()
-    camera_area = pygame.Rect (0, 0, 640, 480)
-    screen = pygame.display.set_mode((640, 480))
+    camera_area = pygame.Rect (0, 0, 1024, 700)
+    screen = pygame.display.set_mode((camera_area.width, camera_area.height))
     pygame.display.set_caption('Multiplayer frog selection')
 
     # Fill background
@@ -82,19 +94,21 @@ def main():
 
     # Initialise players
     players = []
-    players.append (Frog(key=K_UP, column=0))
-    players.append (Frog(key=K_a, column=1))
 
-    # Initialise sprites
+    # Initialise sprite groups
     playersprites = pygame.sprite.Group(players)
+    # Scenery isn't dangerous (but includes roads, which spawn hazards)
+    scenerysprites = pygame.sprite.Group()
+    # Hazard sprites are the ones that will kill colliding frogs
     hazardsprites = pygame.sprite.Group()
 
     # Blit everything to the screen
     screen.blit(background, (0, 0))
     pygame.display.flip()
 
-    # Initialise clock
+    # Initialise clock and RNG
     clock = pygame.time.Clock()
+    random_number_generator = random.Random()
 
     # Event loop
     while 1:
@@ -140,32 +154,48 @@ def main():
         # Screen scroll is really moving everything downwards
         for entity in playersprites:
             entity.rect.move_ip (0, screen_scroll)
+        for entity in scenerysprites:
+            entity.rect.move_ip (0, screen_scroll)
         for entity in hazardsprites:
             entity.rect.move_ip (0, screen_scroll)
 
         # If any frogs are at the back of the screen, move them
         if screen_scroll:
             for player in players:
-                if player.rect.bottom + screen_scroll > 0.95 * camera_area.height:
-                    player.jump()
+                if player.rect.bottom + screen_scroll >= camera_area.height:
+                    player.jump_forced()
 
-        # Scrolling the screen may introduce a new hazard
-        bounds = get_bounding_box (hazardsprites)
+        # Scrolling the screen may introduce a new hazard or hazard-spawning scenery
+        bounds = get_bounding_box (hazardsprites, scenerysprites)
         if bounds == None or bounds.top > 100:
-            road = Road (hazardsprites, Rect(0, -100, camera_area.width, 64), speed=5)
-            hazardsprites.add (road)
+            speed = random_number_generator.randint (-5, 5)
+            if speed != 0:
+                road = Road (hazardsprites, Rect(0, -100, camera_area.width, 64), speed)
+                scenerysprites.add (road)
 
         hazardsprites.update()
+        scenerysprites.update()
         playersprites.update()
 
-        offscreenHazards = []
+        offscreenRemoval = []
+        for entity in scenerysprites:
+            if entity.rect.top > camera_area.height:
+                offscreenRemoval.append (entity)
         for entity in hazardsprites:
             if entity.rect.top > camera_area.height:
-                offscreenHazards.append (entity)
-        for entity in offscreenHazards:
+                offscreenRemoval.append (entity)
+        for entity in offscreenRemoval:
+            print ("Removing hazard or scenery at ", entity.rect)
             entity.kill()
 
+        # Now check for collisions
+        for player in playersprites:
+            hit = pygame.sprite.spritecollide (player, hazardsprites, False, collided=pygame.sprite.collide_mask)
+            if (hit):
+                print ("Frog hit hazard")
+
         screen.blit(background, (0, 0))
+        scenerysprites.draw(screen)
         hazardsprites.draw(screen)
         playersprites.draw(screen)
         pygame.display.flip()

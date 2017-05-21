@@ -36,10 +36,11 @@ class Car(pygame.sprite.Sprite):
         "trashmaster.png",
     ]
 
-    def __init__(self, start_point, speed=1):
+    def __init__(self, start_point, kill_point, speed=1):
         """The car spawns with its center at start_point, which should be off-screen.
         
-        Positive speeds make the car travel left-to-right, negative means right-to-left
+        Positive speeds make the car travel left-to-right, negative means right-to-left.
+        When the center of the car reaches kill_point, the sprite is removed
         """
         pygame.sprite.Sprite.__init__(self)
         self.speed = speed
@@ -54,13 +55,22 @@ class Car(pygame.sprite.Sprite):
         if speed > 0:
             self.image = pygame.transform.rotate (north_image, -90)
         else:
-            self.image = pygame.transform.rotate (north_image, -90)
+            self.image = pygame.transform.rotate (north_image, 90)
+        self.mask = pygame.mask.from_surface(self.image)
         self.rect = self.image.get_rect()
         self.rect.center = start_point.x, start_point.y
-        screen = pygame.display.get_surface()
+        self.kill_point = kill_point
 
     def update(self):
-        self.rect.move_ip (self.speed, 0);
+        self.rect.move_ip (self.speed, 0)
+        if self.kill_point > 0 and self.rect.left > self.kill_point:
+            self.kill()
+        elif self.kill_point < 0 and self.rect.right < self.kill_point:
+            self.kill()
+
+    def kill(self):
+        print ("Despawning car at ", self.rect)
+        super().kill()
 
 class Road(pygame.sprite.Sprite):
     """A road is both a background, and a monsterspawn for cars. Spawned cars
@@ -77,17 +87,23 @@ class Road(pygame.sprite.Sprite):
         self.image.fill (pygame.Color (40, 40, 40, 255))
         # For the initial spawn, it should have a high probability of happening immediately
         self.ticks_since_last_spawn = 1000
+        print ("New road with speed ", speed)
 
     def update(self):
         self.ticks_since_last_spawn += 1
-        if self.ticks_since_last_spawn * self.speed > random.randrange (100, 2000):
+        if self.ticks_since_last_spawn * abs (self.speed) > random.randrange (300, 10000):
             self.spawn_car()
 
     def spawn_car(self):
+        left_spawnx = -100
+        right_spawnx = self.rect.width + 100
         start_point = None
+        car = None
         if self.speed > 0:
-            start_point = CenterPoint(-100, self.rect.centery)
+            start_point = CenterPoint(left_spawnx, self.rect.centery)
+            car = Car (start_point, right_spawnx, self.speed)
         else:
-            start_point = CenterPoint(self.rect.width + 100, self.rect.centery)
-        self.car_sprite_group.add (Car (start_point, self.speed))
+            start_point = CenterPoint(right_spawnx, self.rect.centery)
+            car = Car (start_point, left_spawnx, self.speed)
+        self.car_sprite_group.add (car)
         self.ticks_since_last_spawn = 0

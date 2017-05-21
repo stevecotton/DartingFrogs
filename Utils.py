@@ -33,15 +33,16 @@ def load_png(name, team_color=None):
         raise SystemExit (message)
     return image, image.get_rect()
 
-def get_bounding_box(group):
+def get_bounding_box(*groups):
     """Returns the smallest Rect containing all of the sprites in a pygame.sprite.Group, or None
     for an empty group."""
     result = None
-    for entity in group:
-        if result == None:
-            result = entity.rect.copy()
-        else:
-            result.union_ip (entity.rect)
+    for group in groups:
+        for entity in group:
+            if result == None:
+                result = entity.rect.copy()
+            else:
+                result.union_ip (entity.rect)
     return result
 
 
