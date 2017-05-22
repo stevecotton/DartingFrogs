@@ -26,3 +26,6 @@ class GameConstants:
     # Individual steps of a jump - on each clock tick, the frog moves forward (or down, as these
     # numbers are negative) this many pixels.  This adds up to -jump_length, or -road_width.
     frog_jump_movement = [-6, -6, -6, -5, -5, -5, -5, -4, -4, -4, -3, -3, -3, -2, -2, -1]
+
+    # How far apart the "distance 1000" messages are
+    milestone_distance = 2500

@@ -142,14 +142,18 @@ def multiplayer_race (screen, camera_area) -> bool:
     game_over_sprite = None
     distance_covered = 0
     distance_until_next_hazard = GameConstants.road_width
+    # The text saying how far the frogs have gone
+    next_milestone = GameConstants.milestone_distance
 
     # Initialise sprite groups
-    playersprites = pygame.sprite.Group(players)
+    player_sprites = pygame.sprite.Group(players)
     # Scenery isn't dangerous (but includes roads, which spawn hazards)
-    scenerysprites = pygame.sprite.Group()
-    scenerysprites.add (new_players_can_join)
+    scenery_sprites = pygame.sprite.Group()
     # Hazard sprites are the ones that will kill colliding frogs
-    hazardsprites = pygame.sprite.Group()
+    hazard_sprites = pygame.sprite.Group()
+    # Message sprites are overlayed over everything else
+    message_sprites = pygame.sprite.Group()
+    message_sprites.add (new_players_can_join)
 
     # Initialise clock and RNG
     clock = pygame.time.Clock()
@@ -159,8 +163,8 @@ def multiplayer_race (screen, camera_area) -> bool:
     grass = random_number_generator.randint (1, 4)
     for x in range (1, 4):
         if x != grass:
-            road = Road (hazardsprites, Rect(0, x * GameConstants.road_width, camera_area.width, GameConstants.road_width))
-            scenerysprites.add (road)
+            road = Road (hazard_sprites, Rect(0, x * GameConstants.road_width, camera_area.width, GameConstants.road_width))
+            scenery_sprites.add (road)
             road.update()
 
     # Blit everything to the screen
@@ -187,7 +191,7 @@ def multiplayer_race (screen, camera_area) -> bool:
                     if new_players_can_join.alive():
                         frog = Frog (key=event.key, column=len(players), distance_align=-distance_until_next_hazard)
                         players.append (frog)
-                        playersprites.add (frog)
+                        player_sprites.add (frog)
                         frog.jump()
                     else:
                         # todo: show that the new-player phase has ended
@@ -200,7 +204,7 @@ def multiplayer_race (screen, camera_area) -> bool:
 
         # Find out where the frogs are, calculate whether the screen should scroll
         screen_scroll = 0
-        bounds = get_bounding_box (playersprites)
+        bounds = get_bounding_box (player_sprites)
         if bounds != None:
             # Scroll if no-one's near the bottom
             if bounds.bottom < 0.8 * camera_area.height:
@@ -215,11 +219,13 @@ def multiplayer_race (screen, camera_area) -> bool:
             screen_scroll = 3
 
         # Screen scroll is really moving everything downwards
-        for entity in playersprites:
+        for entity in player_sprites:
             entity.rect.move_ip (0, screen_scroll)
-        for entity in scenerysprites:
+        for entity in scenery_sprites:
             entity.rect.move_ip (0, screen_scroll)
-        for entity in hazardsprites:
+        for entity in hazard_sprites:
+            entity.rect.move_ip (0, screen_scroll)
+        for entity in message_sprites:
             entity.rect.move_ip (0, screen_scroll)
 
         # If any frogs are at the back of the screen, move them
@@ -235,18 +241,27 @@ def multiplayer_race (screen, camera_area) -> bool:
             distance_until_next_hazard += GameConstants.road_width
             hazard = random_number_generator.choice (("grass", "road", "road"))
             if hazard == "road":
-                road = Road (hazardsprites, Rect(0, -distance_until_next_hazard, camera_area.width, GameConstants.road_width))
-                scenerysprites.add (road)
+                road = Road (hazard_sprites, Rect(0, -distance_until_next_hazard, camera_area.width, GameConstants.road_width))
+                scenery_sprites.add (road)
 
-        hazardsprites.update()
-        scenerysprites.update()
-        playersprites.update()
+        if distance_covered >= next_milestone:
+            milestone = MessageSprite ("Distance: %d" % next_milestone)
+            message_sprites.add (milestone)
+            next_milestone += GameConstants.milestone_distance
+
+        message_sprites.update()
+        hazard_sprites.update()
+        scenery_sprites.update()
+        player_sprites.update()
 
         offscreenRemoval = []
-        for entity in scenerysprites:
+        for entity in scenery_sprites:
             if entity.rect.top > camera_area.height:
                 offscreenRemoval.append (entity)
-        for entity in hazardsprites:
+        for entity in hazard_sprites:
+            if entity.rect.top > camera_area.height:
+                offscreenRemoval.append (entity)
+        for entity in message_sprites:
             if entity.rect.top > camera_area.height:
                 offscreenRemoval.append (entity)
         for entity in offscreenRemoval:
@@ -256,27 +271,28 @@ def multiplayer_race (screen, camera_area) -> bool:
             return True
 
         # Now check for collisions
-        for player in playersprites:
-            hit = pygame.sprite.spritecollide (player, hazardsprites, False, collided=pygame.sprite.collide_mask)
+        for player in player_sprites:
+            hit = pygame.sprite.spritecollide (player, hazard_sprites, False, collided=pygame.sprite.collide_mask)
             if (hit):
                 player.kill()
                 new_players_can_join.kill()
-        if (not playersprites) and (not new_players_can_join.alive()):
+        if (not player_sprites) and (not new_players_can_join.alive()):
             if not game_over_sprite:
                 game_over_sprite = MessageSprite ("GAME OVER (distance %d)" % distance_covered)
-                hazardsprites.add (game_over_sprite)
+                message_sprites.add (game_over_sprite)
         # Check for victory in multiplayer, if there is one frog still alive
-        if len (playersprites) == 1 and len (players) > 1:
+        if len (player_sprites) == 1 and len (players) > 1:
             if not game_over_sprite:
                 for player in players:
                     if player.alive():
                         game_over_sprite = VictoryMessage (player)
-                        hazardsprites.add (game_over_sprite)
+                        message_sprites.add (game_over_sprite)
 
         screen.blit(background, (0, 0))
-        scenerysprites.draw(screen)
-        hazardsprites.draw(screen)
-        playersprites.draw(screen)
+        scenery_sprites.draw(screen)
+        hazard_sprites.draw(screen)
+        player_sprites.draw(screen)
+        message_sprites.draw(screen)
         pygame.display.flip()
 
 if __name__ == '__main__': main()
