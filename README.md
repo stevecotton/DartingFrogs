@@ -26,8 +26,8 @@ number of players amused me, so I decided to implement it.
 Development notes
 =================
 
-Frog images
------------
+Frog images and team colors
+---------------------------
 
 The game only has one set of frog images, with magenta coloration. This is
 using the "magenta is the team color" idea that's documented on
@@ -38,9 +38,7 @@ License
 
 The code is GPLv2+, partly based on Tom Chance's PyGame tutorial.
 
-Placeholder frog image, copyright Octalot. It's expected to be replaced with a
-frog drawn by Octalot, possibly using (GFDL / CC-BY-SA) photos of poison dart
-frogs for reference.
+The placeholder frog image is copyright Octalot and licensed under CC-BY 3.0.
 
 * data/frog\_resting.png
 * data/frog\_resting.xcf
