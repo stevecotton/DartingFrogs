@@ -115,7 +115,6 @@ class Frog(pygame.sprite.Sprite):
         # If there's an absurd number of players, start laying out frogs from the left
         if self.rect.right > screen.get_rect().width:
             self.rect.left = self.rect.right % screen.get_rect().width
-        print ("Frog rect: ", self.rect, " total movement: ", sum (GameConstants.frog_jump_movement))
 
     def update(self):
         if self.state == "jump" and self.stateStep < len(GameConstants.frog_jump_movement):
@@ -320,7 +319,6 @@ def multiplayer_race (screen, camera_area) -> bool:
             if entity.rect.top > camera_area.height:
                 offscreenRemoval.append (entity)
         for entity in offscreenRemoval:
-            print ("Removing hazard or scenery at ", entity.rect)
             entity.kill()
         if game_over_sprite and not game_over_sprite.alive():
             return True

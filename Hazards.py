@@ -44,7 +44,6 @@ class ImageCache:
     def load_rotated_image (self, filename, rotation):
         key = (filename, rotation)
         if key in __class__.cache:
-            print ("Cache hit for ", key)
             return __class__.cache[key]
         image, ignored_rect = load_png(filename)
         if rotation != 0:
@@ -108,7 +107,6 @@ class Car(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = start_point.x, start_point.y
         self.kill_point = kill_point
-        print ("Spawning car at ", self.rect, " with speed ", speed)
 
     def update(self):
         self.rect.move_ip (self.speed, 0)
@@ -118,7 +116,6 @@ class Car(pygame.sprite.Sprite):
             self.kill()
 
     def kill(self):
-        print ("Despawning car at ", self.rect)
         super().kill()
 
 class Road(pygame.sprite.Sprite):
@@ -150,7 +147,6 @@ class Road(pygame.sprite.Sprite):
             self.killx = self.rect.width + 100
         # Put some cars on the road during the first update() call
         self.ticks_until_next_spawn = -1
-        print ("New road with speed ", self.speed, " and spawnx ", self.spawnx)
 
     def update(self):
         # Negative ticks_until_next_spawn mean this is the first update() for
