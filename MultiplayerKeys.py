@@ -33,29 +33,75 @@ except ImportError as err:
     print ("couldn't load module. %s" % (err))
     sys.exit(2)
 
+class InputTest:
+    """An instance of this can be created for any key or button, the matches() function will then
+    return true if a new event happens on the same key or button. It's a comparison ignoring whether
+    the event type is an UP or DOWN event.
+    """
+    def getDownType(event):
+        if event.type == KEYUP:
+            return KEYDOWN
+        elif event.type == MOUSEBUTTONUP:
+            return MOUSEBUTTONDOWN
+        else:
+            return event.type
+
+    def __init__(self, event):
+        self.event_type = __class__.getDownType (event)
+        if self.event_type == KEYDOWN:
+            self.key = event.key
+        elif event.type == MOUSEBUTTONDOWN:
+            self.button = event.button
+        else:
+            raise RuntimeError ("Uncontrolled frog (no associated keyboard key, mouse button or joystick button")
+
+    def matches(self, event):
+        if self.event_type != __class__.getDownType (event):
+            return False
+        elif self.event_type == KEYDOWN:
+            return self.key == event.key
+        elif self.event_type == MOUSEBUTTONDOWN:
+            return self.button == event.button
+        else:
+            return False
+
+    def describe_name(self):
+        if self.event_type == KEYDOWN:
+            return pygame.key.name (self.key)
+        elif self.event_type == MOUSEBUTTONDOWN:
+            return "mouse button %d" % self.button
+        else:
+            raise RuntimeError ("Uncontrolled frog (no associated keyboard key, mouse button or joystick button")
+
+    def get_some_number(self):
+        """A very weak hash-like function, which returns a number representing this input; this is
+        intended to be used for the frog colors, so that the same key or button gets the same color
+        of frog across games.
+        """
+        if self.event_type == KEYDOWN:
+            return self.key
+        elif self.event_type == MOUSEBUTTONDOWN:
+            return self.button
+        else:
+            return 0
+
 class Frog(pygame.sprite.Sprite):
-    """Each frog will have a key to make it jump, and a team-color"""
+    """Each frog will have a key or button to make it jump, and a team-color"""
 
     sprites_files = ['frog_resting.png', 'frog_jump.png']
 
-    def __init__(self, key=None, mouse_button=None, team_color=None, column=0, distance_align=0):
-        """The key is the keyboard key used to make the frog jump"""
+    def __init__(self, input_event, team_color=None, column=0, distance_align=0):
         pygame.sprite.Sprite.__init__(self)
-        if key != None:
-            print ("Creating a new frog for key ", key, " in column ", column)
-            self.name = pygame.key.name (key)
-            if (key % 2):
-                team_color=pygame.Color (0x80, 0x20 * ((7 - key) % 8), 0, 255)
-            else:
-                team_color=pygame.Color (0, 0x20 * ((7 - key) % 8), 0x80, 255)
-        elif mouse_button != None:
-            print ("Creating a new frog for mouse button ", mouse_button, " in column ", column)
-            self.name = "mouse button %d" % mouse_button
-            team_color=pygame.Color (0x80, 0x20 * ((7 - mouse_button) % 8), 0, 255)
+        self.input_test = InputTest (input_event)
+        self.name = self.input_test.describe_name()
+        # The color is based on a weak hash of the input, so that the same input always gets the
+        # same frog color, thus someone who uses the same key for two games gets the same frog color
+        number = self.input_test.get_some_number()
+        if (number % 2):
+            team_color=pygame.Color (0x80, 0x20 * ((7 - number) % 8), 0, 255)
         else:
-            raise RuntimeError ("Uncontrolled frog (no associated keyboard key, mouse button or joystick button")
-        self.key = key
-        self.mouse_button = mouse_button
+            team_color=pygame.Color (0, 0x20 * ((7 - number) % 8), 0x80, 255)
+        print ("Creating a new frog for input", self.input_test.describe_name(), "in column", column)
         self.image, self.rect = load_png(__class__.sprites_files[0], team_color)
         self.mask = pygame.mask.from_surface(self.image)
         screen = pygame.display.get_surface()
@@ -80,13 +126,8 @@ class Frog(pygame.sprite.Sprite):
             self.state = self.stateNext
             self.stateStep = 0
 
-    def get_jump_key(self):
-        """If this frog is controlled by the keyboard, returns the controlling key, else returns None"""
-        return self.key
-
-    def get_jump_mouse_button(self):
-        """If this frog is controlled by the mouse, returns the controlling button, else returns None"""
-        return self.mouse_button
+    def test_input_matches(self, event):
+        return self.input_test.matches (event)
 
     def get_name(self):
         return self.name
@@ -120,7 +161,7 @@ class NewPlayersJoinMessage(MessageSprite):
     screen is the time that players can't join any more
     """
     def __init__(self):
-        message = "Press any key to get a frog (except escape, which quits)"
+        message = "Press any button or any key to get a frog (except escape, which quits)"
         MessageSprite.__init__(self, message)
 
 class VictoryMessage(MessageSprite):
@@ -193,17 +234,17 @@ def multiplayer_race (screen, camera_area) -> bool:
         for event in pygame.event.get():
             if event.type == QUIT:
                 return False
-            elif event.type == KEYDOWN:
-                if event.key == K_ESCAPE:
+            elif event.type == KEYDOWN and event.key == K_ESCAPE:
                     return False
+            elif event.type == KEYDOWN or event.type == MOUSEBUTTONDOWN:
                 already_controls_a_frog = False
                 for player in players:
-                    if event.key == player.get_jump_key():
+                    if player.test_input_matches (event):
                         already_controls_a_frog = True
                         player.jump()
                 if not already_controls_a_frog:
                     if new_players_can_join.alive():
-                        frog = Frog (key=event.key, column=len(players), distance_align=-distance_until_next_hazard)
+                        frog = Frog (input_event=event, column=len(players), distance_align=-distance_until_next_hazard)
                         players.append (frog)
                         player_sprites.add (frog)
                         frog.jump()
@@ -211,28 +252,10 @@ def multiplayer_race (screen, camera_area) -> bool:
                         # todo: show that the new-player phase has ended
                         pass
 
-            elif event.type == KEYUP:
+            elif event.type == KEYUP or event.type == MOUSEBUTTONUP:
                 for player in players:
-                    if event.key == player.get_jump_key():
+                    if player.test_input_matches (event):
                         player.rest()
-
-            elif event.type == MOUSEBUTTONDOWN:
-                already_controls_a_frog = False
-                for player in players:
-                    if event.button == player.get_jump_mouse_button():
-                        already_controls_a_frog = True
-                        player.jump()
-                if not already_controls_a_frog:
-                    if new_players_can_join.alive():
-                        frog = Frog (mouse_button=event.button, column=len(players), distance_align=-distance_until_next_hazard)
-                        players.append (frog)
-                        player_sprites.add (frog)
-                        frog.jump()
-            elif event.type == MOUSEBUTTONUP:
-                for player in players:
-                    if event.button == player.get_jump_mouse_button():
-                        player.rest()
-
 
         # Find out where the frogs are, calculate whether the screen should scroll
         screen_scroll = 0
