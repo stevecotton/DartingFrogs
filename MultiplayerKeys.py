@@ -38,15 +38,24 @@ class Frog(pygame.sprite.Sprite):
 
     sprites_files = ['frog_resting.png', 'frog_jump.png']
 
-    def __init__(self, key, team_color=None, column=0, distance_align=0):
+    def __init__(self, key=None, mouse_button=None, team_color=None, column=0, distance_align=0):
         """The key is the keyboard key used to make the frog jump"""
         pygame.sprite.Sprite.__init__(self)
-        print ("Creating a new frog for key ", key, " in column ", column)
-        self.key = key
-        if (key % 2):
-            team_color=pygame.Color (0x80, 0x20 * ((7 - key) % 8), 0, 255)
+        if key != None:
+            print ("Creating a new frog for key ", key, " in column ", column)
+            self.name = pygame.key.name (key)
+            if (key % 2):
+                team_color=pygame.Color (0x80, 0x20 * ((7 - key) % 8), 0, 255)
+            else:
+                team_color=pygame.Color (0, 0x20 * ((7 - key) % 8), 0x80, 255)
+        elif mouse_button != None:
+            print ("Creating a new frog for mouse button ", mouse_button, " in column ", column)
+            self.name = "mouse button %d" % mouse_button
+            team_color=pygame.Color (0x80, 0x20 * ((7 - mouse_button) % 8), 0, 255)
         else:
-            team_color=pygame.Color (0, 0x20 * ((7 - key) % 8), 0x80, 255)
+            raise RuntimeError ("Uncontrolled frog (no associated keyboard key, mouse button or joystick button")
+        self.key = key
+        self.mouse_button = mouse_button
         self.image, self.rect = load_png(__class__.sprites_files[0], team_color)
         self.mask = pygame.mask.from_surface(self.image)
         screen = pygame.display.get_surface()
@@ -72,10 +81,15 @@ class Frog(pygame.sprite.Sprite):
             self.stateStep = 0
 
     def get_jump_key(self):
+        """If this frog is controlled by the keyboard, returns the controlling key, else returns None"""
         return self.key
 
+    def get_jump_mouse_button(self):
+        """If this frog is controlled by the mouse, returns the controlling button, else returns None"""
+        return self.mouse_button
+
     def get_name(self):
-        return pygame.key.name (self.key)
+        return self.name
 
     def jump(self):
         """Change to a different sprite, and move up the screen"""
@@ -201,6 +215,24 @@ def multiplayer_race (screen, camera_area) -> bool:
                 for player in players:
                     if event.key == player.get_jump_key():
                         player.rest()
+
+            elif event.type == MOUSEBUTTONDOWN:
+                already_controls_a_frog = False
+                for player in players:
+                    if event.button == player.get_jump_mouse_button():
+                        already_controls_a_frog = True
+                        player.jump()
+                if not already_controls_a_frog:
+                    if new_players_can_join.alive():
+                        frog = Frog (mouse_button=event.button, column=len(players), distance_align=-distance_until_next_hazard)
+                        players.append (frog)
+                        player_sprites.add (frog)
+                        frog.jump()
+            elif event.type == MOUSEBUTTONUP:
+                for player in players:
+                    if event.button == player.get_jump_mouse_button():
+                        player.rest()
+
 
         # Find out where the frogs are, calculate whether the screen should scroll
         screen_scroll = 0
