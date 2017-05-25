@@ -73,17 +73,35 @@ class InputTest:
         else:
             raise RuntimeError ("Uncontrolled frog (no associated keyboard key, mouse button or joystick button")
 
-    def get_some_number(self):
-        """A very weak hash-like function, which returns a number representing this input; this is
+    def get_team_color(self):
+        """A very weak hash-like function, which returns a Color representing this input; this is
         intended to be used for the frog colors, so that the same key or button gets the same color
         of frog across games.
+
+        The colors will distinguishable from green.
         """
+        number = 0
         if self.event_type == KEYDOWN:
-            return self.key
+            number = self.key
         elif self.event_type == MOUSEBUTTONDOWN:
-            return self.button
+            number = self.button
+
+        # Either red or blue or both must be present, so the color isn't green
+        red, blue = 0, 0
+        if number % 5 == 0:
+            red = 0xc0
+        elif number % 5 == 1:
+            blue = 0xc0
+        elif number % 5 == 2:
+            red = 0x80
+        elif number % 5 == 3:
+            blue = 0x80
         else:
-            return 0
+            red = 0x60
+            blue = 0x60
+        green = 0x40 + 0x10 * (number % 8)
+
+        return pygame.Color (red, green, blue, 255)
 
 class Frog(pygame.sprite.Sprite):
     """Each frog will have a key or button to make it jump, and a team-color"""
@@ -94,13 +112,7 @@ class Frog(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         self.input_test = InputTest (input_event)
         self.name = self.input_test.describe_name()
-        # The color is based on a weak hash of the input, so that the same input always gets the
-        # same frog color, thus someone who uses the same key for two games gets the same frog color
-        number = self.input_test.get_some_number()
-        if (number % 2):
-            team_color=pygame.Color (0x80, 0x20 * ((7 - number) % 8), 0, 255)
-        else:
-            team_color=pygame.Color (0, 0x20 * ((7 - number) % 8), 0x80, 255)
+        team_color = self.input_test.get_team_color()
         print ("Creating a new frog for input", self.input_test.describe_name(), "in column", column)
         self.image, self.rect = load_png(__class__.sprites_files[0], team_color)
         self.mask = pygame.mask.from_surface(self.image)
