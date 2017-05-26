@@ -43,6 +43,8 @@ class InputTest:
             return KEYDOWN
         elif event.type == MOUSEBUTTONUP:
             return MOUSEBUTTONDOWN
+        elif event.type == JOYBUTTONUP:
+            return JOYBUTTONDOWN
         else:
             return event.type
 
@@ -51,6 +53,9 @@ class InputTest:
         if self.event_type == KEYDOWN:
             self.key = event.key
         elif event.type == MOUSEBUTTONDOWN:
+            self.button = event.button
+        elif event.type == JOYBUTTONDOWN:
+            self.joy = event.joy
             self.button = event.button
         else:
             raise RuntimeError ("Uncontrolled frog (no associated keyboard key, mouse button or joystick button")
@@ -62,6 +67,8 @@ class InputTest:
             return self.key == event.key
         elif self.event_type == MOUSEBUTTONDOWN:
             return self.button == event.button
+        elif self.event_type == JOYBUTTONDOWN:
+            return self.joy == event.joy and self.button == event.button
         else:
             return False
 
@@ -70,6 +77,8 @@ class InputTest:
             return pygame.key.name (self.key)
         elif self.event_type == MOUSEBUTTONDOWN:
             return "mouse button %d" % self.button
+        elif self.event_type == JOYBUTTONDOWN:
+            return "joystick %d button %d" % (self.joy, self.button)
         else:
             raise RuntimeError ("Uncontrolled frog (no associated keyboard key, mouse button or joystick button")
 
@@ -85,6 +94,8 @@ class InputTest:
             number = self.key
         elif self.event_type == MOUSEBUTTONDOWN:
             number = self.button
+        elif self.event_type == JOYBUTTONDOWN:
+            number = self.button * 14 + self.joy
 
         # Either red or blue or both must be present, so the color isn't green
         red, blue = 0, 0
@@ -189,6 +200,12 @@ def main():
     camera_area = pygame.Rect (0, 0, 1024, 700)
     screen = pygame.display.set_mode((camera_area.width, camera_area.height))
     pygame.display.set_caption('Multiplayer frog race')
+
+    # Initialise joysticks
+    print ("Joystick count:", pygame.joystick.get_count())
+    for i in range (pygame.joystick.get_count()):
+        pygame.joystick.Joystick(i).init()
+
     play_again = True
     while play_again:
         play_again = multiplayer_race (screen, camera_area)
@@ -246,7 +263,7 @@ def multiplayer_race (screen, camera_area) -> bool:
                 return False
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                     return False
-            elif event.type == KEYDOWN or event.type == MOUSEBUTTONDOWN:
+            elif event.type == KEYDOWN or event.type == MOUSEBUTTONDOWN or event.type == JOYBUTTONDOWN:
                 already_controls_a_frog = False
                 for player in players:
                     if player.test_input_matches (event):
@@ -262,7 +279,7 @@ def multiplayer_race (screen, camera_area) -> bool:
                         # todo: show that the new-player phase has ended
                         pass
 
-            elif event.type == KEYUP or event.type == MOUSEBUTTONUP:
+            elif event.type == KEYUP or event.type == MOUSEBUTTONUP or event.type == JOYBUTTONUP:
                 for player in players:
                     if player.test_input_matches (event):
                         player.rest()
