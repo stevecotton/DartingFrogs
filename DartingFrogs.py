@@ -134,8 +134,8 @@ class Frog(pygame.sprite.Sprite):
         # The game aligns everything to (top of screen + a multiple of jump_length), frogs start
         # at an aligned point that's about a jump from the bottom of the screen.
         self.rect.top = distance_align + ((screen.get_rect().height / GameConstants.jump_length) - 1) * GameConstants.jump_length
-		# The frogs should be in the center vertically, not at the left or right.  If there's an
-		# absurd number of players, the modulus puts them back to the left.
+        # The frogs should be in the center vertically, not at the left or right.  If there's an
+        # absurd number of players, the modulus puts them back to the left.
         self.rect.centerx = screen.get_rect().width / 4 + self.rect.width * column % (screen.get_rect().width / 2)
 
     def update(self):
