@@ -297,6 +297,9 @@ def multiplayer_race (screen, camera_area) -> bool:
             # Scroll faster if someone is far ahead
             if bounds.top < 0.2 * camera_area.height:
                 screen_scroll += 2
+            # Jumpy scroll if someone is almost off-screen
+            if bounds.top < GameConstants.furthest_single_tick_jump:
+                screen_scroll += GameConstants.furthest_single_tick_jump - bounds.top
         if game_over_sprite != None:
             screen_scroll = 3
 
@@ -357,11 +360,12 @@ def multiplayer_race (screen, camera_area) -> bool:
             if (hit):
                 player.kill()
                 new_players_can_join.kill()
+        # Check for game over
         if (not player_sprites) and (not new_players_can_join.alive()):
             if not game_over_sprite:
                 game_over_sprite = MessageSprite ("GAME OVER (distance %d)" % distance_covered)
                 message_sprites.add (game_over_sprite)
-        # Check for victory in multiplayer, if there is one frog still alive
+        # Check for victory in multiplayer, if there is exactly one frog still alive
         if len (player_sprites) == 1 and len (players) > 1:
             if not game_over_sprite:
                 for player in players:

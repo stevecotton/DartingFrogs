@@ -27,5 +27,9 @@ class GameConstants:
     # numbers are negative) this many pixels.  This adds up to -jump_length, or -road_width.
     frog_jump_movement = [-6, -6, -6, -5, -5, -5, -5, -4, -4, -4, -3, -3, -3, -2, -2, -1]
 
+    # The furthest a frog can move in a single clock tick, equivalent to
+    # max (abs (frog_jump_movement))
+    furthest_single_tick_jump = 6
+
     # How far apart the "distance 1000" messages are
     milestone_distance = 2500
