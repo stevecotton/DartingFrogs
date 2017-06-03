@@ -123,6 +123,7 @@ class Road(pygame.sprite.Sprite):
     will be added to the car_sprite_group"""
 
     random_speeds = [1, 2, 3, 3, 3, 4, 4, 4, 5, 5, 8, -1, -2, -3, -3, -3, -4, -4, -4, -5, -5, -8]
+    random_spawn_range = [300, 1000]
 
     def __init__(self, car_sprite_group, rect, speed=0):
         """The cars on a road all travel at the same speed
@@ -138,6 +139,8 @@ class Road(pygame.sprite.Sprite):
             self.speed = speed
         else:
             self.speed = self.random.choice (__class__.random_speeds)
+        self.min_spawn_ticks = int (__class__.random_spawn_range[0] / abs (self.speed))
+        self.max_spawn_ticks = int (__class__.random_spawn_range[1] / abs (self.speed))
         # Cars are created in the middle of the road at x=spawnx, and disappear at killx
         if self.speed < 0:
             self.spawnx = self.rect.width + 100
@@ -149,8 +152,9 @@ class Road(pygame.sprite.Sprite):
         self.ticks_until_next_spawn = -1
 
     def update(self):
-        # Negative ticks_until_next_spawn mean this is the first update() for
-        # this road, and it will still be off-screen.
+        # Negative ticks_until_next_spawn mean this is the first update() for this road, and it will
+        # still be off-screen.  Spawn a car that's already on the road, so that the roads don't
+        # start empty.
         if self.ticks_until_next_spawn < 0:
             spawnx = self.random.randrange (self.rect.width)
             self.spawn_car(spawnx)
@@ -160,7 +164,7 @@ class Road(pygame.sprite.Sprite):
             self.ticks_until_next_spawn -= 1
 
     def spawn_car(self, spawnx):
-        start_point = CenterPoint (self.spawnx, self.rect.centery)
+        start_point = CenterPoint (spawnx, self.rect.centery)
         car = Car (start_point, self.killx, self.speed)
         self.car_sprite_group.add (car)
-        self.ticks_until_next_spawn = random.randrange (300, 1000) / abs (self.speed)
+        self.ticks_until_next_spawn = random.randrange (self.min_spawn_ticks, self.max_spawn_ticks)
