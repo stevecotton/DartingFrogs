@@ -232,13 +232,17 @@ class AiFrog(Frog):
         team_color = pygame.Color (255, 0, 255, 255)
         Frog.__init__(self, name, team_color, Frog.PlacementHint.ai, column, distance_align)
         self.random_number_generator = random.Random()
+        self.ai_pause = 0
 
     def update(self):
         Frog.update(self)
         if self.state == Frog.State.still:
-            if Frog.State.jump == self.random_number_generator.choice ((Frog.State.still, Frog.State.jump)):
+            if self.ai_pause == 0:
+                self.ai_pause = self.random_number_generator.randint (1, 5)
                 self.jump_forced()
                 Frog.update(self)
+            else:
+                self.ai_pause -= 1
 
     def test_input_matches(self, event):
         return False
