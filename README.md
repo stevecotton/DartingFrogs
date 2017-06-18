@@ -1,9 +1,12 @@
 Darting Frogs
 =============
 
-A multiplayer frog race, across roads.  Many players can play, every frog has
-just one control key, which makes it jump forward, there is no way to jump
-backwards.
+A frog race where every frog has just one control key to make it jump forward.
+Press *any* key or joypad button to get a frog, and then that's your jump key.
+
+Everyone else who presses a key gets a frog as well, to race yours.
+
+![Screenshot with 3 players](screenshots/banner_screenshot.png)
 
 Why "darting"?
 --------------
