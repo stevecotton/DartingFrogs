@@ -72,9 +72,9 @@ class InputTest:
         if self.event_type == KEYDOWN:
             return pygame.key.name (self.key)
         elif self.event_type == MOUSEBUTTONDOWN:
-            return "mouse button %d" % self.button
+            return _("mouse button %d") % self.button
         elif self.event_type == JOYBUTTONDOWN:
-            return "joystick %d button %d" % (self.joy, self.button)
+            return _("joystick %d button %d") % (self.joy, self.button)
         else:
             raise RuntimeError ("Uncontrolled frog (no associated keyboard key, mouse button or joystick button")
 
@@ -224,7 +224,7 @@ class PlayerFrog(Frog):
 class AiFrog(Frog):
     """A computer-controlled frog"""
     def __init__(self, input_event, column=0, distance_align=0):
-        name = "AI %d" % column
+        name = _("AI %d") % column
         team_color = pygame.Color (255, 0, 255, 255)
         Frog.__init__(self, name, team_color, Frog.PlacementHint.ai, column, distance_align)
         self.random_number_generator = random.Random()
@@ -240,6 +240,7 @@ class AiFrog(Frog):
         return False
 
 if __name__ == '__main__':
-    print ("Hint: the main file is DartingFrogs.py")
     from DartingFrogs import main
+    # Do the import before the print, because it also sets up gettext
+    print (_("Hint: the main file is DartingFrogs.py"))
     main()
