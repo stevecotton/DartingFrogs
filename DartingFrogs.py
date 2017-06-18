@@ -29,143 +29,10 @@ try:
     from GameConstants import GameConstants
     from Hazards import Road
     from Utils import *
+    from Frogs import PlayerFrog
 except ImportError as err:
     print ("couldn't load module. %s" % (err))
     sys.exit(2)
-
-class InputTest:
-    """An instance of this can be created for any key or button, the matches() function will then
-    return true if a new event happens on the same key or button. It's a comparison ignoring whether
-    the event type is an UP or DOWN event.
-    """
-    def getDownType(event):
-        if event.type == KEYUP:
-            return KEYDOWN
-        elif event.type == MOUSEBUTTONUP:
-            return MOUSEBUTTONDOWN
-        elif event.type == JOYBUTTONUP:
-            return JOYBUTTONDOWN
-        else:
-            return event.type
-
-    def __init__(self, event):
-        self.event_type = __class__.getDownType (event)
-        if self.event_type == KEYDOWN:
-            self.key = event.key
-        elif event.type == MOUSEBUTTONDOWN:
-            self.button = event.button
-        elif event.type == JOYBUTTONDOWN:
-            self.joy = event.joy
-            self.button = event.button
-        else:
-            raise RuntimeError ("Uncontrolled frog (no associated keyboard key, mouse button or joystick button")
-
-    def matches(self, event):
-        if self.event_type != __class__.getDownType (event):
-            return False
-        elif self.event_type == KEYDOWN:
-            return self.key == event.key
-        elif self.event_type == MOUSEBUTTONDOWN:
-            return self.button == event.button
-        elif self.event_type == JOYBUTTONDOWN:
-            return self.joy == event.joy and self.button == event.button
-        else:
-            return False
-
-    def describe_name(self):
-        if self.event_type == KEYDOWN:
-            return pygame.key.name (self.key)
-        elif self.event_type == MOUSEBUTTONDOWN:
-            return "mouse button %d" % self.button
-        elif self.event_type == JOYBUTTONDOWN:
-            return "joystick %d button %d" % (self.joy, self.button)
-        else:
-            raise RuntimeError ("Uncontrolled frog (no associated keyboard key, mouse button or joystick button")
-
-    def get_team_color(self):
-        """A very weak hash-like function, which returns a Color representing this input; this is
-        intended to be used for the frog colors, so that the same key or button gets the same color
-        of frog across games.
-
-        The colors will distinguishable from green.
-        """
-        number = 0
-        if self.event_type == KEYDOWN:
-            number = self.key
-        elif self.event_type == MOUSEBUTTONDOWN:
-            number = self.button
-        elif self.event_type == JOYBUTTONDOWN:
-            number = self.button * 14 + self.joy
-
-        # Either red or blue or both must be present, so the color isn't green
-        red, blue = 0, 0
-        if number % 5 == 0:
-            red = 0xc0
-        elif number % 5 == 1:
-            blue = 0xc0
-        elif number % 5 == 2:
-            red = 0x80
-        elif number % 5 == 3:
-            blue = 0x80
-        else:
-            red = 0x60
-            blue = 0x60
-        green = 0x40 + 0x10 * (number % 8)
-
-        return pygame.Color (red, green, blue, 255)
-
-class Frog(pygame.sprite.Sprite):
-    """Each frog will have a key or button to make it jump, and a team-color"""
-
-    sprites_files = ['frog_resting.png', 'frog_jump.png']
-
-    def __init__(self, input_event, team_color=None, column=0, distance_align=0):
-        pygame.sprite.Sprite.__init__(self)
-        self.input_test = InputTest (input_event)
-        self.name = self.input_test.describe_name()
-        team_color = self.input_test.get_team_color()
-        print ("Creating a new frog for input", self.input_test.describe_name(), "in column", column)
-        self.image, self.rect = load_png(__class__.sprites_files[0], team_color)
-        self.mask = pygame.mask.from_surface(self.image)
-        screen = pygame.display.get_surface()
-        self.state = "still"
-        self.stateStep = 0;
-        self.stateNext = "still";
-        # The game aligns everything to (top of screen + a multiple of jump_length), frogs start
-        # at an aligned point that's about a jump from the bottom of the screen.
-        self.rect.top = distance_align + (int (screen.get_rect().height / GameConstants.jump_length) - 1) * GameConstants.jump_length
-        # The frogs should be in the center vertically, not at the left or right.  If there's an
-        # absurd number of players, the modulus puts them back to the left.
-        self.rect.centerx = screen.get_rect().width / 4 + self.rect.width * column % (screen.get_rect().width / 2)
-
-    def update(self):
-        if self.state == "jump" and self.stateStep < len(GameConstants.frog_jump_movement):
-            # The scrolling code should keep frogs on screen
-            self.rect.move_ip (0, GameConstants.frog_jump_movement[self.stateStep])
-            self.stateStep = self.stateStep + 1
-        else:
-            self.state = self.stateNext
-            self.stateStep = 0
-
-    def test_input_matches(self, event):
-        return self.input_test.matches (event)
-
-    def get_name(self):
-        return self.name
-
-    def jump(self):
-        """Change to a different sprite, and move up the screen"""
-        self.stateNext = "jump"
-
-    def jump_forced(self):
-        """Frogs at the back of the screen are forced to jump so that they don't scroll off the
-        bottom."""
-        self.state = "jump"
-        self.stateStep = 0
-        # Does not change self.stateNext, "still" frogs will stop after one jump
-
-    def rest(self):
-        self.stateNext = "still"
 
 class MessageSprite(pygame.sprite.Sprite):
     """A single line of text"""
@@ -228,7 +95,7 @@ def multiplayer_race (screen, camera_area) -> bool:
     next_milestone = GameConstants.milestone_distance
 
     # Initialise sprite groups
-    player_sprites = pygame.sprite.Group(players)
+    frog_sprites = pygame.sprite.Group(players)
     # Scenery isn't dangerous (but includes roads, which spawn hazards)
     scenery_sprites = pygame.sprite.Group()
     # Hazard sprites are the ones that will kill colliding frogs
@@ -271,9 +138,9 @@ def multiplayer_race (screen, camera_area) -> bool:
                         player.jump()
                 if not already_controls_a_frog:
                     if new_players_can_join.alive():
-                        frog = Frog (input_event=event, column=len(players), distance_align=-distance_until_next_hazard)
+                        frog = PlayerFrog (input_event=event, column=len(players), distance_align=-distance_until_next_hazard)
                         players.append (frog)
-                        player_sprites.add (frog)
+                        frog_sprites.add (frog)
                         frog.jump()
                     else:
                         # todo: show that the new-player phase has ended
@@ -286,7 +153,7 @@ def multiplayer_race (screen, camera_area) -> bool:
 
         # Find out where the frogs are, calculate whether the screen should scroll
         screen_scroll = 0
-        bounds = get_bounding_box (player_sprites)
+        bounds = get_bounding_box (frog_sprites)
         if bounds != None:
             # Scroll if no-one's near the bottom
             if bounds.bottom < 0.8 * camera_area.height:
@@ -304,7 +171,7 @@ def multiplayer_race (screen, camera_area) -> bool:
             screen_scroll = 3
 
         # Screen scroll is really moving everything downwards
-        for entity in player_sprites:
+        for entity in frog_sprites:
             entity.rect.move_ip (0, screen_scroll)
         for entity in scenery_sprites:
             entity.rect.move_ip (0, screen_scroll)
@@ -337,7 +204,7 @@ def multiplayer_race (screen, camera_area) -> bool:
         message_sprites.update()
         hazard_sprites.update()
         scenery_sprites.update()
-        player_sprites.update()
+        frog_sprites.update()
 
         offscreenRemoval = []
         for entity in scenery_sprites:
@@ -355,18 +222,18 @@ def multiplayer_race (screen, camera_area) -> bool:
             return True
 
         # Now check for collisions
-        for player in player_sprites:
+        for player in frog_sprites:
             hit = pygame.sprite.spritecollide (player, hazard_sprites, False, collided=pygame.sprite.collide_mask)
             if (hit):
                 player.kill()
                 new_players_can_join.kill()
         # Check for game over
-        if (not player_sprites) and (not new_players_can_join.alive()):
+        if (not frog_sprites) and (not new_players_can_join.alive()):
             if not game_over_sprite:
                 game_over_sprite = MessageSprite ("GAME OVER (distance %d)" % distance_covered)
                 message_sprites.add (game_over_sprite)
         # Check for victory in multiplayer, if there is exactly one frog still alive
-        if len (player_sprites) == 1 and len (players) > 1:
+        if len (frog_sprites) == 1 and len (players) > 1:
             if not game_over_sprite:
                 for player in players:
                     if player.alive():
@@ -376,8 +243,9 @@ def multiplayer_race (screen, camera_area) -> bool:
         screen.blit(background, (0, 0))
         scenery_sprites.draw(screen)
         hazard_sprites.draw(screen)
-        player_sprites.draw(screen)
+        frog_sprites.draw(screen)
         message_sprites.draw(screen)
         pygame.display.flip()
 
-if __name__ == '__main__': main()
+if __name__ == '__main__':
+    main()
