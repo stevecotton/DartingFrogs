@@ -25,7 +25,7 @@ try:
     import random
     import pygame
     from pygame.locals import *
-    from Utils import *
+    from Utils import ImageCache
 except ImportError as err:
     print ("couldn't load module. %s" % (err))
     sys.exit(2)
@@ -34,22 +34,6 @@ class CenterPoint:
     def __init__(self, x, y):
         self.x = x
         self.y = y
-
-class ImageCache:
-    cache = {}
-
-    def __init__(self):
-        pass
-
-    def load_rotated_image (self, filename, rotation):
-        key = (filename, rotation)
-        if key in __class__.cache:
-            return __class__.cache[key]
-        image, ignored_rect = load_png(filename)
-        if rotation != 0:
-            image = pygame.transform.rotate (image, rotation)
-        __class__.cache[key] = image
-        return image
 
 class Car(pygame.sprite.Sprite):
     """Cars (including trucks) that travel on a road"""

@@ -26,7 +26,7 @@ try:
     import pygame
     from pygame.locals import *
     from GameConstants import GameConstants
-    from Utils import *
+    from Utils import TeamColorPainter
 except ImportError as err:
     print ("couldn't load module. %s" % (err))
     sys.exit(2)
@@ -137,7 +137,8 @@ class Frog(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         print ("Creating a new frog for", name, "in column", column)
         self.name = name
-        self.image, self.rect = load_png(__class__.sprites_files[0], team_color)
+        self.image = TeamColorPainter.load_image(__class__.sprites_files[0], team_color)
+        self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
         screen = pygame.display.get_surface()
         self.state = Frog.State.still

@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# Copyright (C) 2017 Steve Cotton (Octalot)
+# Copyright (C) 2017-2018 Steve Cotton (Octalot)
 # Based on code from Tom Chance's PyGame tutorial
 # Copyright (C) 2003-2016 Tom Chance
 #
@@ -28,27 +28,6 @@ except ImportError as err:
     print ("couldn't load module. %s" % (err))
     sys.exit(2)
 
-def load_png(name, team_color=None):
-    """ Load image and return image object"""
-    fullname = os.path.join('data', name)
-    try:
-        image = pygame.image.load(fullname)
-        if image.get_alpha() is None:
-            image = image.convert()
-        else:
-            image = image.convert_alpha()
-        if team_color:
-            pxarray = pygame.PixelArray (image)
-            for x in range (40, 240, 40):
-                magenta = pygame.Color (x, 0, x, 255)
-                replacement = pygame.Color (int (x * team_color.r / 255), int (x * team_color.g / 255), int (x * team_color.b / 255), 255)
-                pxarray.replace (magenta, replacement);
-            del pxarray
-    except pygame.error as message:
-        print ('Cannot load image:', fullname)
-        raise SystemExit (message)
-    return image, image.get_rect()
-
 def get_bounding_box(*groups):
     """Returns the smallest Rect containing all of the sprites in a pygame.sprite.Group, or None
     for an empty group."""
@@ -60,3 +39,61 @@ def get_bounding_box(*groups):
             else:
                 result.union_ip (entity.rect)
     return result
+
+class ImageCache:
+    """Caching image loader, each call to load_rotated_image() with the same
+    arguments will return the same pygame.Surface instance.
+    """
+    _code_dir = os.path.abspath(os.path.dirname(__file__))
+    _data_dir = os.path.normpath(os.path.join(_code_dir, 'data'))
+
+    def __init__(self):
+        self._cache = {}
+        pass
+
+    def _load_from_file(self, name):
+        fullname = os.path.join(self._data_dir, name)
+        try:
+            image = pygame.image.load(fullname)
+            if image.get_alpha() is None:
+                image = image.convert()
+            else:
+                image = image.convert_alpha()
+        except pygame.error as message:
+            print ('Cannot load image:', fullname)
+            raise SystemExit (message)
+        return image
+
+    def load_image(self, filename):
+        return self.load_rotated_image (filename, 0)
+
+    def load_rotated_image (self, filename, rotation):
+        key = (filename, rotation)
+        if key in self._cache:
+            return self._cache[key]
+        image = self._load_from_file(filename)
+        if rotation != 0:
+            image = pygame.transform.rotate (image, rotation)
+        self._cache[key] = image
+        return image
+
+class TeamColorPainter:
+    """The game only has one set of frog images, and uses palette shifting to
+    generate the multiple colors.  The base image has magenta coloration.
+
+    For a description with examples, see Wesnoth's Wiki:
+    https://wiki.wesnoth.org/Team_Color_Shifting
+    """
+
+    # The base image is cached, but a copy is made for each recoloration
+    image_cache = ImageCache()
+
+    def load_image(name, team_color):
+        image = __class__.image_cache.load_image(name).copy()
+        pxarray = pygame.PixelArray (image)
+        for x in range (40, 240, 40):
+            magenta = pygame.Color (x, 0, x, 255)
+            replacement = pygame.Color (int (x * team_color.r / 255), int (x * team_color.g / 255), int (x * team_color.b / 255), 255)
+            pxarray.replace (magenta, replacement)
+        del pxarray
+        return image
