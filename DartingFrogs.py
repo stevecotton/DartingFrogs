@@ -50,13 +50,27 @@ class MessageSprite(pygame.sprite.Sprite):
         screen = pygame.display.get_surface()
         self.rect.centerx = screen.get_size()[0] / 2
 
-class NewPlayersJoinMessage(MessageSprite):
+class PlayersCanJoinMessage(MessageSprite):
     """The text that any key joins the game is a sprite, when it scrolls off
     screen is the time that players can't join any more
     """
     def __init__(self):
         message = _("Press any button or any key to get a frog (except escape, which quits)")
         MessageSprite.__init__(self, message)
+
+class EachJoiningPlayerMessage(MessageSprite):
+    """Shown when a new player joins the game, to show which key or button controls which frog"""
+    def __init__(self, frog):
+        pygame.sprite.Sprite.__init__(self)
+        message = frog.get_name()
+        if len (message) == 1:
+            font = pygame.font.SysFont(None, 50)
+        else:
+            font = pygame.font.SysFont(None, 20)
+        self.image = font.render (message, True, frog.get_color())
+        self.rect = self.image.get_rect()
+        self.rect.centerx = frog.rect.centerx
+        self.rect.top = frog.rect.centery
 
 class VictoryMessage(MessageSprite):
     """Shown as the game_over_sprite if someone won a multiplayer game"""
@@ -97,7 +111,7 @@ def multiplayer_race (screen, camera_area) -> bool:
 
     # Initialise players
     players = []
-    new_players_can_join = NewPlayersJoinMessage()
+    new_players_can_join = PlayersCanJoinMessage()
     game_over_sprite = None
     distance_covered = 0
     distance_until_next_hazard = GameConstants.road_width
@@ -152,6 +166,7 @@ def multiplayer_race (screen, camera_area) -> bool:
                         players.append (frog)
                         frog_sprites.add (frog)
                         frog.jump()
+                        message_sprites.add (EachJoiningPlayerMessage (frog))
                     else:
                         # todo: show that the new-player phase has ended
                         pass

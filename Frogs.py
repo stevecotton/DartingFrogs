@@ -137,6 +137,7 @@ class Frog(pygame.sprite.Sprite):
         pygame.sprite.Sprite.__init__(self)
         print ("Creating a new frog for", name, "in column", column)
         self.name = name
+        self.team_color = team_color
         self.image = TeamColorPainter.load_image(__class__.sprites_files[0], team_color)
         self.rect = self.image.get_rect()
         self.mask = pygame.mask.from_surface(self.image)
@@ -191,6 +192,9 @@ class Frog(pygame.sprite.Sprite):
 
     def get_name(self):
         return self.name
+
+    def get_color(self):
+        return self.team_color
 
     def jump(self):
         """Change to a different sprite, and move up the screen"""
