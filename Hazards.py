@@ -54,6 +54,8 @@ class ImageCache:
 class Car(pygame.sprite.Sprite):
     """Cars (including trucks) that travel on a road"""
 
+    # The sprite is chosen simply by choosing one of these at random, so repeating an entry makes it
+    # more likely to be chosen.
     fast_car_sprites = [
         "cars/GalardB.png",
         "cars/SuperB.png",
@@ -141,7 +143,7 @@ class Road(pygame.sprite.Sprite):
             self.speed = self.random.choice (__class__.random_speeds)
         self.min_spawn_ticks = int (__class__.random_spawn_range[0] / abs (self.speed))
         self.max_spawn_ticks = int (__class__.random_spawn_range[1] / abs (self.speed))
-        # Cars are created in the middle of the road at x=spawnx, and disappear at killx
+        # Cars are created in the middle (vertically) of the road at x=spawnx, and disappear at killx
         if self.speed < 0:
             self.spawnx = self.rect.width + 100
             self.killx = -100

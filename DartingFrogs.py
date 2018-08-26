@@ -17,10 +17,13 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-"""This is intended to allow as many players as required.  While the frogs are still on the first screen,
-pressing any normal key adds a frog that will jump when that key is pressed
-again.
+"""A multiplayer frog-racing game.
+
+This is intended to allow as many players as required.  While the frogs are
+still on the first screen, pressing any normal key adds a frog that will jump
+when that key is pressed again.
 """
+
 try:
     import gettext
     import sys
@@ -69,7 +72,7 @@ def main():
         print ("Could not initialize fonts")
     camera_area = pygame.Rect (0, 0, 1024, 700)
     screen = pygame.display.set_mode((camera_area.width, camera_area.height))
-    pygame.display.set_caption(_('Multiplayer frog race'))
+    pygame.display.set_caption(_('Darting Frogs'))
 
     # Initialise joysticks
     print ("Joystick count:", pygame.joystick.get_count())
@@ -81,8 +84,12 @@ def main():
         play_again = multiplayer_race (screen, camera_area)
 
 def multiplayer_race (screen, camera_area) -> bool:
-    """One complete loop of the game, until game over.
-    Returns true if there should be another game"""
+    """Each call of this function runs one complete game, from waiting for
+    players until game over.
+
+    Returns true if there should be another game. When the escape key is
+    pressed, this returns false.
+    """
     # Fill background
     background = pygame.Surface(screen.get_size())
     background = background.convert()
@@ -170,6 +177,8 @@ def multiplayer_race (screen, camera_area) -> bool:
             # Jumpy scroll if someone is almost off-screen
             if bounds.top < GameConstants.furthest_single_tick_jump:
                 screen_scroll += GameConstants.furthest_single_tick_jump - bounds.top
+        # When the game over message is being displayed, the screen scrolls continually. This
+        # scrolls at a fixed speed, it's no problem if a frog jumps off the top of the screen.
         if game_over_sprite != None:
             screen_scroll = 3
 

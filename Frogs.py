@@ -17,6 +17,8 @@
 # You should have received a copy of the GNU General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+"""Handling for the frog sprites and player inputs."""
+
 try:
     from enum import Enum
     import sys
@@ -83,7 +85,7 @@ class InputTest:
         intended to be used for the frog colors, so that the same key or button gets the same color
         of frog across games.
 
-        The colors will be distinguishable from green.
+        The colors will be distinguishable from green (the color of the grass).
         """
         number = 0
         if self.event_type == KEYDOWN:
@@ -93,7 +95,7 @@ class InputTest:
         elif self.event_type == JOYBUTTONDOWN:
             number = self.button * 14 + self.joy
 
-        # Either red or blue or both must be present, so the color isn't green
+        # Either red or blue or both must be present, so that the color isn't green
         red, blue = 0, 0
         if number % 5 == 0:
             red = 0xc0
@@ -200,7 +202,7 @@ class Frog(pygame.sprite.Sprite):
         Frogs at the back of the screen are forced to jump so that they don't scroll off the bottom.
 
         The AiFrog also uses this function to jump once, so the frog doesn't jump a second time
-        until trigger again by the AI logic.
+        until triggered again by the AI logic.
         """
         self.state = Frog.State.jump
         self.stateStep = 0
