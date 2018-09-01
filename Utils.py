@@ -81,6 +81,20 @@ class ImageCache:
         self._cache[key] = image
         return image
 
+    def load_tiled_image (self, filename, width, height):
+        key = (filename, width, height)
+        if key in self._cache:
+            return self._cache[key]
+        tile = self._load_from_file(filename)
+        if tile.get_rect().width < 1 or tile.get_rect().height < 1:
+            raise RuntimeException ("Failed to load tileable image %s" % (imagefile))
+        image = pygame.Surface ((width, height))
+        for x in range (0, width, tile.get_rect().width):
+            for y in range (0, width, tile.get_rect().width):
+                image.blit (tile, (x, y))
+        self._cache[key] = image
+        return image
+
 class TeamColorPainter:
     """The game only has one set of frog images, and uses palette shifting to
     generate the multiple colors.  The base image has magenta coloration.

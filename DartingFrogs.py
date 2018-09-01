@@ -30,7 +30,7 @@ try:
     import random
     import pygame
     from GameConstants import GameConstants
-    from Hazards import Road
+    from Hazards import Grass, Road
     from MessageSprites import *
     from Utils import *
     from Frogs import PlayerFrog
@@ -91,6 +91,8 @@ def multiplayer_race (screen, camera_area) -> bool:
         "Darting Frogs",
         "by Octalot (Steve Cotton), based on Tom Chance's GPLv2+ PyGame tutorial",
         "cars and trucks by Lowder2 (CC-BY 3.0) and Satik64 (CC0)",
+        "road textures by Thomas Oppl for SuperTuxKart (CC-BY-SA 3.0)",
+        "grass textures from Widelands (GPLv2+)",
         "Thanks to all of the above, and to the OpenGameArt and PyGame communities",
     ], firstLineSize=40)
     credits_message.rect.bottomleft = camera_area.bottomleft
@@ -104,13 +106,15 @@ def multiplayer_race (screen, camera_area) -> bool:
     clock = pygame.time.Clock()
     random_number_generator = random.Random()
 
-    # For the first screen, generate some roads
-    grass = random_number_generator.randint (1, 4)
-    for x in range (1, 4):
-        if x != grass:
-            road = Road (hazard_sprites, Rect(0, x * GameConstants.road_width, camera_area.width, GameConstants.road_width))
-            scenery_sprites.add (road)
-            road.update()
+    # For the first screen, generate some roads and cover the rest of the start-screen in grass
+    initial_roads = random_number_generator.sample(range (0,4), 3)
+    for i in range (-1, 1 + int (camera_area.height / GameConstants.road_width)):
+        if i in initial_roads:
+            new_scenery = Road (hazard_sprites, Rect(0, i * GameConstants.road_width, camera_area.width, GameConstants.road_width))
+        else:
+            new_scenery = Grass (Rect(0, i * GameConstants.road_width, camera_area.width, GameConstants.road_width))
+        scenery_sprites.add (new_scenery)
+        new_scenery.update()
 
     # Blit everything to the screen
     screen.blit(background, (0, 0))
@@ -194,9 +198,12 @@ def multiplayer_race (screen, camera_area) -> bool:
         if distance_until_next_hazard <= 0:
             distance_until_next_hazard += GameConstants.road_width
             hazard = random_number_generator.choice (("grass", "road", "road"))
+            if hazard == "grass":
+                new_scenery = Grass (Rect(0, -distance_until_next_hazard, camera_area.width, GameConstants.road_width))
+                scenery_sprites.add (new_scenery)
             if hazard == "road":
-                road = Road (hazard_sprites, Rect(0, -distance_until_next_hazard, camera_area.width, GameConstants.road_width))
-                scenery_sprites.add (road)
+                new_scenery = Road (hazard_sprites, Rect(0, -distance_until_next_hazard, camera_area.width, GameConstants.road_width))
+                scenery_sprites.add (new_scenery)
 
         if distance_covered >= next_milestone:
             milestone = MessageSprite (_("Distance: %d") % next_milestone)

@@ -104,23 +104,53 @@ class Car(pygame.sprite.Sprite):
     def kill(self):
         super().kill()
 
-class Road(pygame.sprite.Sprite):
-    """A road is both a background, and a monsterspawn for cars. Spawned cars
-    will be added to the car_sprite_group"""
+class TiledBackground(pygame.sprite.Sprite):
+    """Common code for roads and grass areas that will be drawn with lots of copies of a single image."""
+
+    image_cache = ImageCache()
+
+    def __init__(self, rect, imagefile):
+        pygame.sprite.Sprite.__init__(self)
+        self.rect = rect
+        self.image = __class__.image_cache.load_tiled_image (imagefile, rect.width, rect.height)
+
+class Grass(TiledBackground):
+    """Grass is not hazardous, but it's here to use the TiledBackground"""
+
+    background_images = [
+        "terrain/meadow1_00.png",
+        "terrain/meadow2_00.png",
+        "terrain/meadow3_00.png",
+        "terrain/meadow4_00.png",
+    ]
+
+    def __init__(self, rect):
+        TiledBackground.__init__(self, rect, random.Random().choice(__class__.background_images))
+
+class Road(TiledBackground):
+    """A road is both a background, and a monsterspawn for cars."""
 
     random_speeds = [1, 2, 3, 3, 3, 4, 4, 4, 5, 5, 8, -1, -2, -3, -3, -3, -4, -4, -4, -5, -5, -8]
     random_spawn_range = [300, 1000]
 
+    background_images = [
+        "terrain/road1.png",
+        "terrain/road2.png",
+    ]
+
     def __init__(self, car_sprite_group, rect, speed=0):
         """The cars on a road all travel at the same speed
 
-        speed=0 means to randomly generate a speed"""
-        pygame.sprite.Sprite.__init__(self)
+        speed=0 means to randomly generate a speed.
+
+        Spawned cars will be added to the car_sprite_group passed to the
+        constructor, collision detection will treat sprites in the
+        car_sprite_group as deadly hazards.
+        """
+        TiledBackground.__init__(self, rect, random.Random().choice(__class__.background_images))
         self.car_sprite_group = car_sprite_group
         self.random = random.Random()
         self.rect = rect
-        self.image = pygame.Surface ((rect.width, rect.height))
-        self.image.fill (pygame.Color (40, 40, 40, 255))
         if speed:
             self.speed = speed
         else:

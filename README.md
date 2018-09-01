@@ -61,3 +61,18 @@ https://opengameart.org/content/vary-car-pack-1
 * data/cars/JeepB.png
 * data/cars/RamB.png
 * data/cars/SuperB.png
+
+The road textures are cropped from supertuxkart's `city_asphalt` texture, which
+is copyright Thomas Oppl (horace), and licensed under CC-BY-SA 3.0.
+
+* data/terrain/road1.png
+* data/terrain/road2.png
+* data/terrain/road3.png
+* data/terrain/road4.png
+
+The grass terrain is from Widelands, and is GPL-2+.
+
+* `data/terrain/meadow1_00.png`
+* `data/terrain/meadow2_00.png`
+* `data/terrain/meadow3_00.png`
+* `data/terrain/meadow4_00.png`
