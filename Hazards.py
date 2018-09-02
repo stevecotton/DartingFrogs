@@ -142,10 +142,20 @@ class Road(pygame.sprite.Sprite):
         # still be off-screen.  Spawn a car that's already on the road, so that the roads don't
         # start empty.
         if self.ticks_until_next_spawn < 0:
-            spawnx = self.random.randrange (self.rect.width)
-            self.spawn_car(spawnx)
+            spawnx = self.killx
+            if self.speed < 0:
+                while spawnx < self.spawnx:
+                    spawnx -= self.speed * random.randrange (self.min_spawn_ticks, self.max_spawn_ticks)
+                    self.spawn_car(spawnx)
+            else:
+                while spawnx > self.spawnx:
+                    spawnx -= self.speed * random.randrange (self.min_spawn_ticks, self.max_spawn_ticks)
+                    self.spawn_car(spawnx)
+            self.ticks_until_next_spawn = random.randrange (self.min_spawn_ticks, self.max_spawn_ticks)
+            self.ticks_until_next_spawn += int (abs (spawnx - self.spawnx) / abs (self.speed))
         elif self.ticks_until_next_spawn == 0:
             self.spawn_car (self.spawnx)
+            self.ticks_until_next_spawn = random.randrange (self.min_spawn_ticks, self.max_spawn_ticks)
         else:
             self.ticks_until_next_spawn -= 1
 
@@ -153,4 +163,3 @@ class Road(pygame.sprite.Sprite):
         start_point = CenterPoint (spawnx, self.rect.centery)
         car = Car (start_point, self.killx, self.speed)
         self.car_sprite_group.add (car)
-        self.ticks_until_next_spawn = random.randrange (self.min_spawn_ticks, self.max_spawn_ticks)
