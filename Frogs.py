@@ -155,24 +155,21 @@ class Frog(pygame.sprite.Sprite):
             # AI frogs start off-screen, and so will be jump_forced() on to the screen
             self.rect.top = distance_align + (int (screen.get_rect().height / GameConstants.jump_length) + 1) * GameConstants.jump_length
 
-        # Place the frog horizontally.  The screen is split vertically in to the left 25% (left AI
-        # area), middle 50% (player area) and right 25% (right AI area).  Player frogs go in the
-        # middle area, AI frogs go in the left and right margins, so both groups have an area that's
-        # 50% of the screen width.  If there's an absurd number of players, the algorithm starts
-        # putting them on the left again.
+        # Place the frog horizontally.  There are four placement areas: left AI area, left player
+        # area, right player area, right AI area. The "/ 5" is because keeping all players in the
+        # middle 40% of the screen lets the players at the edge see more.  If there's an absurd
+        # number of players, the algorithm starts putting them near the center again.
         frog_width = self.rect.width
-        placement_area_width = int (screen.get_rect().width / 2) - frog_width
-        frog_placement = self.rect.width * column % placement_area_width
-        # The boundary between the left AI area and the player area
-        player_area_left = int (screen.get_rect().width / 4)
+        placement_area_width = int (screen.get_rect().width / 5) - frog_width
+        use_left_side = column % 2
+        offset_from_center = (frog_width * int (column / 2)) % placement_area_width
         screen_centerx = int (screen.get_rect().width / 2)
-        if placement_hint == Frog.PlacementHint.player:
-            self.rect.left = player_area_left + frog_placement
+        if placement_hint == Frog.PlacementHint.ai:
+            offset_from_center += placement_area_width
+        if use_left_side:
+            self.rect.left = screen_centerx + offset_from_center
         else:
-            if frog_placement + frog_width < player_area_left:
-                self.rect.left = frog_placement
-            else:
-                self.rect.left = screen_centerx + frog_placement
+            self.rect.left = screen_centerx - offset_from_center - frog_width
 
     def update(self):
         """If the frog is jumping, move and update the state. If not jumping (or at the end of a
