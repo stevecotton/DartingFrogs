@@ -192,6 +192,9 @@ def multiplayer_race (screen, camera_area) -> bool:
             # Jumpy scroll if someone is almost off-screen
             if bounds.top < GameConstants.furthest_single_tick_jump:
                 screen_scroll += GameConstants.furthest_single_tick_jump - bounds.top
+        # In a single-player game, the screen always scrolls
+        if len (frog_sprites) == 1 and screen_scroll == 0 and not new_players_can_join.alive():
+            screen_scroll = 1
         # When the game over message is being displayed, the screen scrolls continually. This
         # scrolls at a fixed speed, it's no problem if a frog jumps off the top of the screen.
         if game_over_sprite != None:
