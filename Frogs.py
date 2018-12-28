@@ -85,7 +85,7 @@ class InputTest:
         intended to be used for the frog colors, so that the same key or button gets the same color
         of frog across games.
 
-        The colors will be distinguishable from green (the color of the grass).
+        The colors will be distinguishable from dark-green (the color of the grass).
         """
         number = 0
         if self.event_type == KEYDOWN:
@@ -95,22 +95,19 @@ class InputTest:
         elif self.event_type == JOYBUTTONDOWN:
             number = self.button * 14 + self.joy
 
-        # Either red or blue or both must be present, so that the color isn't green
-        red, blue = 0, 0
-        if number % 5 == 0:
-            red = 0xc0
-        elif number % 5 == 1:
-            blue = 0xc0
-        elif number % 5 == 2:
-            red = 0x80
-        elif number % 5 == 3:
-            blue = 0x80
+        hashtool = random.Random(number)
+        hue = hashtool.randint(0, 359)
+        # Around green (hue=120), use only bright colors with low saturation
+        if 60 < hue and hue < 180:
+            saturation = hashtool.randint(0, 40)
+            value = hashtool.randint(70, 100)
         else:
-            red = 0x60
-            blue = 0x60
-        green = 0x40 + 0x10 * (number % 8)
+            saturation = hashtool.randint(50, 100)
+            value = hashtool.randint(50, 90)
+        color = pygame.Color(0, 0, 0, 255)
+        color.hsva = (hue, saturation, value, 100)
 
-        return pygame.Color (red, green, blue, 255)
+        return color
 
 class Frog(pygame.sprite.Sprite):
     """Common class for both player-controlled frogs and AI-controlled frogs
