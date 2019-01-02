@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 #
-# Copyright (C) 2017-2018 Steve Cotton (Octalot)
+# Copyright (C) 2017-2019 Steve Cotton (Octalot)
 # Based on code from Tom Chance's PyGame tutorial
 # Copyright (C) 2003-2016 Tom Chance
 #
@@ -41,8 +41,12 @@ def get_bounding_box(*groups):
     return result
 
 class ImageCache:
-    """Caching image loader, each call to load_rotated_image() with the same
-    arguments will return the same pygame.Surface instance.
+    """Caching image loader, each call to one of the load_*_image functions with the same arguments
+    will return the same instance of pygame.Surface.
+
+    Each instance of ImageCache has its own cache, which is not shared with other instances; the
+    caller is expected to share the instance appropriately. For example, all instances of the Car
+    class share Car.image_cache.
     """
     _code_dir = os.path.abspath(os.path.dirname(__file__))
     _data_dir = os.path.normpath(os.path.join(_code_dir, 'data'))
@@ -91,7 +95,7 @@ class TeamColorPainter:
     def load_image(name, team_color):
         image = __class__.image_cache.load_image(name).copy()
         pxarray = pygame.PixelArray (image)
-        for x in range (40, 240, 40):
+        for x in range (40, 241, 40):
             magenta = pygame.Color (x, 0, x, 255)
             replacement = pygame.Color (int (x * team_color.r / 255), int (x * team_color.g / 255), int (x * team_color.b / 255), 255)
             pxarray.replace (magenta, replacement)
