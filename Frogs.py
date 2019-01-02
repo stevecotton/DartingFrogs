@@ -119,9 +119,10 @@ class Frog(pygame.sprite.Sprite):
     """
 
     class State(Enum):
-        """A still frog is not moving. A jumping frog moves based on self.stateStep and GameConstants.frog_jump_movement"""
+        """A still frog is not moving. A frog in either of the jump_ states moves."""
         still = 1
-        jump = 2
+        jump_repeat = 2 # when this jump finishes, jump again until rest() is called
+        jump_and_stop = 3 # when this jump finishes, change to State.still
 
     class PlacementHint(Enum):
         """The players need to be able to see cars coming from both left and right, so
@@ -144,7 +145,6 @@ class Frog(pygame.sprite.Sprite):
         screen = pygame.display.get_surface()
         self.state = Frog.State.still
         self.stateStep = 0;
-        self.stateNext = Frog.State.still
 
         # Place the frog on screen.  The game aligns everything vertically to (top of screen + a
         # multiple of jump_length), newly-created frogs start at a vertically-aligned point.
@@ -172,19 +172,21 @@ class Frog(pygame.sprite.Sprite):
             self.rect.left = screen_centerx - offset_from_center - frog_width
 
     def update(self):
-        """If the frog is jumping, move and update the state. If not jumping (or at the end of a
-        jump), change to the next state (which may be the same as the current state.
+        """If the frog is jumping, move and update the state. Each jump is handled by multiple calls
+        to update(), which is tracked by the self.stateStep and GameConstants.frog_jump_movement.
 
         If the state is State.still after this method returns, subclasses are allowed to call it a
         multiple times.  Particularly the way that AiFrog uses it is allowed.
         """
 
-        if self.state == Frog.State.jump and self.stateStep < len(GameConstants.frog_jump_movement):
+        if self.state in (Frog.State.jump_and_stop, Frog.State.jump_repeat) and self.stateStep < len(GameConstants.frog_jump_movement):
             # The scrolling code should keep frogs on screen
             self.rect.move_ip (0, GameConstants.frog_jump_movement[self.stateStep])
             self.stateStep = self.stateStep + 1
-        else:
-            self.state = self.stateNext
+        elif self.state == Frog.State.jump_repeat:
+            self.stateStep = 0
+        elif self.state == Frog.State.jump_and_stop:
+            self.state = Frog.State.still
             self.stateStep = 0
 
     def get_name(self):
@@ -194,24 +196,26 @@ class Frog(pygame.sprite.Sprite):
         return self.team_color
 
     def jump(self):
-        """Change to a different sprite, and move up the screen"""
-        self.stateNext = Frog.State.jump
+        """Start moving, and keep moving until rest() is called. Change to a different sprite, and
+        move up the screen. The logic may be deferred until the update() method.
+        """
+        self.state = Frog.State.jump_repeat
 
     def jump_forced(self):
-        """Make a single jump, but do not change self.stateNext, so frogs in State.still will stop
-        after one jump.
+        """Jump, but stop after one jump (unless the frog is already in jump_repeat state).
 
         Frogs at the back of the screen are forced to jump so that they don't scroll off the bottom.
 
         The AiFrog also uses this function to jump once, so the frog doesn't jump a second time
         until triggered again by the AI logic.
         """
-        self.state = Frog.State.jump
-        self.stateStep = 0
-        # Does not change self.stateNext, State.still frogs will stop after one jump
+        if self.state == Frog.State.still:
+            self.state = Frog.State.jump_and_stop
+            self.stateStep = 0
 
     def rest(self):
-        self.stateNext = Frog.State.still
+        if self.state == Frog.State.jump_repeat:
+            self.state = Frog.State.jump_and_stop
 
 class PlayerFrog(Frog):
     """A frog controlled by a player (instead of a computer-controlled frog)"""
