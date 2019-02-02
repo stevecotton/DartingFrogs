@@ -82,7 +82,11 @@ class EachJoiningPlayerMessage(pygame.sprite.Sprite):
         else:
             fontsize = 20
         font = pygame.font.SysFont(None, fontsize)
-        self.image = font.render (message, True, frog.get_color())
+        renderedText = font.render (message, True, frog.get_color())
+        with_border = renderedText.get_rect().inflate (10, 10)
+        self.image = pygame.Surface (with_border.size, flags=SRCALPHA)
+        self.image.fill ((0, 0, 0, 0x20))
+        self.image.blit (renderedText, (5, 5))
         self.rect = self.image.get_rect()
         self.rect.centerx = frog.rect.centerx
         self.rect.top = frog.rect.centery
