@@ -29,9 +29,9 @@ try:
     import sys
     import random
     import pygame
-    from pygame.locals import *
     from GameConstants import GameConstants
     from Hazards import Road
+    from MessageSprites import *
     from Utils import *
     from Frogs import PlayerFrog
 except ImportError as err:
@@ -39,44 +39,6 @@ except ImportError as err:
     sys.exit(2)
 
 gettext.install ('DartingFrogs', 'data/locale')
-
-class MessageSprite(pygame.sprite.Sprite):
-    """A single line of text"""
-    def __init__(self, message):
-        pygame.sprite.Sprite.__init__(self)
-        font = pygame.font.SysFont(None, 40)
-        self.image = font.render (message, True, (255, 255, 255))
-        self.rect = self.image.get_rect()
-        screen = pygame.display.get_surface()
-        self.rect.centerx = screen.get_size()[0] / 2
-
-class PlayersCanJoinMessage(MessageSprite):
-    """The text that any key joins the game is a sprite, when it scrolls off
-    screen is the time that players can't join any more
-    """
-    def __init__(self):
-        message = _("Press any button or any key to get a frog (except escape, which quits)")
-        MessageSprite.__init__(self, message)
-
-class EachJoiningPlayerMessage(MessageSprite):
-    """Shown when a new player joins the game, to show which key or button controls which frog"""
-    def __init__(self, frog):
-        pygame.sprite.Sprite.__init__(self)
-        message = frog.get_name()
-        if len (message) == 1:
-            font = pygame.font.SysFont(None, 50)
-        else:
-            font = pygame.font.SysFont(None, 20)
-        self.image = font.render (message, True, frog.get_color())
-        self.rect = self.image.get_rect()
-        self.rect.centerx = frog.rect.centerx
-        self.rect.top = frog.rect.centery
-
-class VictoryMessage(MessageSprite):
-    """Shown as the game_over_sprite if someone won a multiplayer game"""
-    def __init__(self, victor):
-        message = _("Winner: %s") % victor.get_name()
-        MessageSprite.__init__(self, message)
 
 def main():
     # Initialise screen
@@ -112,6 +74,7 @@ def multiplayer_race (screen, camera_area) -> bool:
     # Initialise players
     players = []
     new_players_can_join = PlayersCanJoinMessage()
+    new_players_can_join.rect.midtop = camera_area.midtop
     game_over_sprite = None
     distance_covered = 0
     distance_until_next_hazard = GameConstants.road_width
@@ -124,9 +87,18 @@ def multiplayer_race (screen, camera_area) -> bool:
     scenery_sprites = pygame.sprite.Group()
     # Hazard sprites are the ones that will kill colliding frogs
     hazard_sprites = pygame.sprite.Group()
+    credits_message = MultiLineMessageSprite([
+        "Darting Frogs",
+        "by Octalot (Steve Cotton), based on Tom Chance's GPLv2+ PyGame tutorial",
+        "cars and trucks by Lowder2 (CC-BY 3.0) and Satik64 (CC0)",
+        "Thanks to all of the above, and to the OpenGameArt and PyGame communities",
+    ], firstLineSize=40)
+    credits_message.rect.bottomleft = camera_area.bottomleft
+
     # Message sprites are overlayed over everything else
     message_sprites = pygame.sprite.Group()
     message_sprites.add (new_players_can_join)
+    message_sprites.add (credits_message);
 
     # Initialise clock and RNG
     clock = pygame.time.Clock()
@@ -228,6 +200,7 @@ def multiplayer_race (screen, camera_area) -> bool:
 
         if distance_covered >= next_milestone:
             milestone = MessageSprite (_("Distance: %d") % next_milestone)
+            milestone.rect.midtop = camera_area.midtop
             message_sprites.add (milestone)
             next_milestone += GameConstants.milestone_distance
 
@@ -261,6 +234,7 @@ def multiplayer_race (screen, camera_area) -> bool:
         if (not frog_sprites) and (not new_players_can_join.alive()):
             if not game_over_sprite:
                 game_over_sprite = MessageSprite (_("GAME OVER (distance %d)") % distance_covered)
+                game_over_sprite.rect.midtop = camera_area.midtop
                 message_sprites.add (game_over_sprite)
         # Check for victory in multiplayer, if there is exactly one frog still alive
         if len (frog_sprites) == 1 and len (players) > 1:
@@ -268,6 +242,7 @@ def multiplayer_race (screen, camera_area) -> bool:
                 for player in players:
                     if player.alive():
                         game_over_sprite = VictoryMessage (player)
+                        game_over_sprite.rect.midtop = camera_area.midtop
                         message_sprites.add (game_over_sprite)
 
         screen.blit(background, (0, 0))
