@@ -87,6 +87,8 @@ def multiplayer_race (screen, camera_area) -> bool:
     scenery_sprites = pygame.sprite.Group()
     # Hazard sprites are the ones that will kill colliding frogs
     hazard_sprites = pygame.sprite.Group()
+    # There's no separate title screen, it's just something that's shown on top
+    # of the grass area before any players join. Feel free to remove this if you
     credits_message = MultiLineMessageSprite([
         "Darting Frogs",
         "by Octalot (Steve Cotton), based on Tom Chance's GPLv2+ PyGame tutorial",
@@ -130,7 +132,7 @@ def multiplayer_race (screen, camera_area) -> bool:
                 return False
             elif event.type == KEYDOWN and event.key == K_ESCAPE:
                     return False
-            elif event.type == KEYDOWN or event.type == MOUSEBUTTONDOWN or event.type == JOYBUTTONDOWN:
+            elif event.type in [KEYDOWN, MOUSEBUTTONDOWN, JOYBUTTONDOWN]:
                 already_controls_a_frog = False
                 for player in players:
                     if player.test_input_matches (event):
@@ -147,10 +149,16 @@ def multiplayer_race (screen, camera_area) -> bool:
                         # todo: show that the new-player phase has ended
                         pass
 
-            elif event.type == KEYUP or event.type == MOUSEBUTTONUP or event.type == JOYBUTTONUP:
+            elif event.type in [KEYUP, MOUSEBUTTONUP, JOYBUTTONUP]:
                 for player in players:
                     if player.test_input_matches (event):
                         player.rest()
+
+            elif event.type == JOYAXISMOTION:
+                if new_players_can_join.alive():
+                    new_players_can_join.kill()
+                    new_players_can_join = PlayersCanOnlyJoinWithButtons(new_players_can_join)
+                    message_sprites.add(new_players_can_join)
 
         # Find out where the frogs are, calculate whether the screen should scroll
         screen_scroll = 0

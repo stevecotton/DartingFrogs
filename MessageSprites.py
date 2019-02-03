@@ -27,10 +27,12 @@ except ImportError as err:
     sys.exit(2)
 
 class MultiLineMessageSprite(pygame.sprite.Sprite):
-    """There's no separate title screen, it's just something that's shown on top of the grass area
-    before any players join.
-    """
+    """General support for showing text on screen"""
     def __init__(self, messages, fontsize=None, firstLineSize=None):
+        """messages should be an array of strings, each string will become one on-screen line. If
+        fontsize is given it will override the default size, if firstLineSize is given then it will
+        override the default size for the first line only.
+        """
         pygame.sprite.Sprite.__init__(self)
         if fontsize is None:
             fontsize = 20
@@ -71,6 +73,22 @@ class PlayersCanJoinMessage(MessageSprite):
     def __init__(self):
         message = _("Press any button or any key to get a frog (except escape, which quits)")
         MessageSprite.__init__(self, message)
+
+class PlayersCanOnlyJoinWithButtons(MessageSprite):
+    """A variation of PlayersCanJoinMessage saying that joyaxismotion isn't
+    supported. To support it would need logic for which positions represent
+    "button down", which represent "button up", and which pairs of axis should
+    represent a single frog.
+
+    IMO buttons / keys seem better suited to this game anyway.
+
+    This takes the old PlayersCanJoinMessage as an argument, and puts itself in
+    the same position on screen.
+    """
+    def __init__(self, oldmessage):
+        message = _("On joysticks, only the buttons are supported, not the sticks or D-pad")
+        MessageSprite.__init__(self, message)
+        self.rect.midtop = oldmessage.rect.midtop
 
 class EachJoiningPlayerMessage(pygame.sprite.Sprite):
     """Shown when a new player joins the game, to show which key or button controls which frog"""
