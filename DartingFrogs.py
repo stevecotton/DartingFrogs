@@ -154,10 +154,13 @@ def multiplayer_race (screen, camera_area) -> bool:
                     if player.test_input_matches (event):
                         player.rest()
 
+            # To support JOYAXISMOTION would need logic for which positions represent "button down",
+            # which represent "button up", and which pairs of axis should represent a single frog.
+            # IMO buttons and keys seem better suited to this game anyway.
             elif event.type == JOYAXISMOTION:
                 if new_players_can_join.alive():
                     new_players_can_join.kill()
-                    new_players_can_join = PlayersCanOnlyJoinWithButtons(new_players_can_join)
+                    new_players_can_join = PlayersCanJoinMessage(new_players_can_join)
                     message_sprites.add(new_players_can_join)
 
         # Find out where the frogs are, calculate whether the screen should scroll

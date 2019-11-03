@@ -28,7 +28,7 @@ except ImportError as err:
 
 class MultiLineMessageSprite(pygame.sprite.Sprite):
     """General support for showing text on screen"""
-    def __init__(self, messages, fontsize=None, firstLineSize=None):
+    def __init__(self, messages, fontsize=None, firstLineSize=None, fontColor=None):
         """messages should be an array of strings, each string will become one on-screen line. If
         fontsize is given it will override the default size, if firstLineSize is given then it will
         override the default size for the first line only.
@@ -41,18 +41,20 @@ class MultiLineMessageSprite(pygame.sprite.Sprite):
             firstFont = font
         else:
             firstFont = pygame.font.SysFont(None, firstLineSize)
+        if fontColor is None:
+            fontColor = (255, 255, 255)
         height = firstFont.get_linesize() + (len(messages) - 1) * font.get_linesize()
-        width = 0
+        width = firstFont.size(messages[0])[0]
         for x in messages:
             width = max(width, font.size(x)[0])
         self.image = pygame.Surface ((width, height), flags=SRCALPHA)
         self.rect = self.image.get_rect()
         for x in [0]:
-            renderedText = firstFont.render (messages[x], True, (255, 255, 255))
+            renderedText = firstFont.render (messages[x], True, fontColor)
             self.image.blit(renderedText, (0, 0))
             nextTop = firstFont.get_linesize()
         for x in range(1, len(messages)):
-            renderedText = font.render (messages[x], True, (255, 255, 255))
+            renderedText = font.render (messages[x], True, fontColor)
             self.image.blit(renderedText, (0, nextTop))
             nextTop += font.get_linesize()
 
@@ -63,32 +65,25 @@ class MessageSprite(MultiLineMessageSprite):
             fontsize = 40
         MultiLineMessageSprite.__init__(self, [message], fontsize)
 
-class PlayersCanJoinMessage(MessageSprite):
+class PlayersCanJoinMessage(MultiLineMessageSprite):
     """The text that any key joins the game is a sprite, when it scrolls off
     screen is the time that players can't join any more
 
     The background doesn't need to be opaque, as it's easily readable on both
     road and grass scenery.
+
+    There's a variation making the message that joyaxismotion isn't supported larger. That's
+    triggered by passing the old PlayersCanJoinMessage as an argument, the new message puts itself
+    on screen where the old one was.
     """
-    def __init__(self):
-        message = _("Press any button or any key to get a frog (except escape, which quits)")
-        MessageSprite.__init__(self, message)
-
-class PlayersCanOnlyJoinWithButtons(MessageSprite):
-    """A variation of PlayersCanJoinMessage saying that joyaxismotion isn't
-    supported. To support it would need logic for which positions represent
-    "button down", which represent "button up", and which pairs of axis should
-    represent a single frog.
-
-    IMO buttons / keys seem better suited to this game anyway.
-
-    This takes the old PlayersCanJoinMessage as an argument, and puts itself in
-    the same position on screen.
-    """
-    def __init__(self, oldmessage):
-        message = _("On joysticks, only the buttons are supported, not the sticks or D-pad")
-        MessageSprite.__init__(self, message)
-        self.rect.midtop = oldmessage.rect.midtop
+    def __init__(self, oldmessage=None):
+        anyButton = _("Press any button or any key to get a frog (except escape, which quits)")
+        noStick = _("On joysticks, only the buttons are supported, not the sticks or D-pad")
+        if oldmessage is None:
+            MultiLineMessageSprite.__init__(self, [anyButton, noStick], fontsize=20, firstLineSize=40)
+        else:
+            MultiLineMessageSprite.__init__(self, [noStick, anyButton], fontsize=20, firstLineSize=40, fontColor=(255, 120, 120))
+            self.rect.midtop = oldmessage.rect.midtop
 
 class EachJoiningPlayerMessage(pygame.sprite.Sprite):
     """Shown when a new player joins the game, to show which key or button controls which frog"""
